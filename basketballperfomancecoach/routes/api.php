@@ -5,6 +5,7 @@ use App\Http\Controllers\WorkoutController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoachController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AthleteNotificationController;
 
 Route::get('/next-day/{user_id}', [WorkoutController::class, 'nextDay']);
 Route::get('/progress', [WorkoutController::class, 'saveProgress']);
@@ -18,6 +19,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/firebase-login', [AuthController::class, 'firebaseLogin']);
 
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+    Route::get('/', [AthleteNotificationController::class, 'index']);
+    Route::get('/unread-count', [AthleteNotificationController::class, 'unreadCount']);
+    Route::post('/read-all', [AthleteNotificationController::class, 'markAllRead']);
+    Route::post('/{notification_id}/read', [AthleteNotificationController::class, 'markRead']);
+});
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::get('/user/{id}', [AuthController::class, 'user']);
 Route::post('/personalization', [AuthController::class, 'personalization']);
@@ -69,4 +76,8 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::put('/videos/{workout_exercise_id}', [AdminController::class, 'updateVideo']);
     Route::patch('/videos/{workout_exercise_id}', [AdminController::class, 'updateVideo']);
     Route::delete('/videos/{workout_exercise_id}', [AdminController::class, 'destroyVideo']);
+
+    Route::get('/athlete-videos', [AdminController::class, 'athleteVideos']);
+    Route::get('/athlete-videos/{recording_id}', [AdminController::class, 'showAthleteVideo']);
+    Route::delete('/athlete-videos/{recording_id}', [AdminController::class, 'destroyAthleteVideo']);
 });

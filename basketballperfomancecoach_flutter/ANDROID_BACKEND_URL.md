@@ -8,16 +8,23 @@ Untuk backend online tetap, gunakan:
 flutter build apk --release --dart-define=API_BASE_URL=https://api.domain-kamu.com/api
 ```
 
-Untuk emulator Android, gunakan alamat host bawaan emulator:
+Untuk HP Android fisik melalui USB, aktifkan port forwarding:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+adb reverse tcp:8000 tcp:8000
+flutter run
 ```
 
 Default project ini sudah memakai:
 
 ```text
-http://10.0.2.2:8000/api
+http://127.0.0.1:8000/api
+```
+
+Untuk emulator Android, gunakan alamat host bawaan emulator:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
 ```
 
 Pastikan Laravel lokal berjalan di port `8000`:

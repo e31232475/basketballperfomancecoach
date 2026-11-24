@@ -950,26 +950,43 @@ class WorkoutController extends Controller
 
     private function progressData(int $userId): array
     {
-        $totalWorkouts = Workout::count();
-        $completedDays = UserWorkoutLog::where('user_id', $userId)
-            ->where('status', 'completed')
-            ->orderBy('day_number')
+        $user = User::find($userId);
+        $programWorkouts = $user ? $this->programWorkouts($user) : collect();
+        $workoutIds = $programWorkouts->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $programDays = $programWorkouts
             ->pluck('day_number')
             ->map(fn ($day) => (int) $day)
+            ->filter(fn ($day) => $day > 0)
             ->unique()
             ->values()
             ->all();
+        $totalProgramDays = count($programDays);
+        $completedDays = $totalProgramDays === 0
+            ? []
+            : UserWorkoutLog::where('user_id', $userId)
+                ->where('status', 'completed')
+                ->whereIn('day_number', $programDays)
+                ->orderBy('day_number')
+                ->pluck('day_number')
+                ->map(fn ($day) => (int) $day)
+                ->unique()
+                ->values()
+                ->all();
         $completedTotal = count($completedDays);
         $summary = $this->performanceSummaryData($userId);
         $weeklyChart = $this->weeklyChart($userId);
         $weeklyActiveDays = collect($weeklyChart)
             ->filter(fn (array $item) => (int) $item['activity_count'] > 0)
             ->count();
-        $recordedDays = WorkoutRecording::where('user_id', $userId)
-            ->distinct('day_number')
-            ->count('day_number');
-        $consistencyProgress = $totalWorkouts > 0
-            ? round((max($completedTotal, $recordedDays) / $totalWorkouts) * 100)
+        $recordedDays = $workoutIds === [] || $programDays === []
+            ? 0
+            : WorkoutRecording::where('user_id', $userId)
+                ->whereIn('workout_id', $workoutIds)
+                ->whereIn('day_number', $programDays)
+                ->distinct('day_number')
+                ->count('day_number');
+        $consistencyProgress = $totalProgramDays > 0
+            ? round((max($completedTotal, $recordedDays) / $totalProgramDays) * 100)
             : 0;
 
         return [
@@ -987,7 +1004,28 @@ class WorkoutController extends Controller
             'weekly_consistency' => round(($weeklyActiveDays / 7) * 100),
             'completed_workout_total' => $completedTotal,
             'current_streak' => $this->currentStreak($completedDays),
-            'total_workouts' => $totalWorkouts,
+            'total_workouts' => $totalProgramDays,
+            'total_program_days' => $totalProgramDays,
+            'training_level' => $user?->training_level,
+            'program_days' => $programWorkouts
+                ->groupBy('day_number')
+                ->map(function ($workouts, $dayNumber) {
+                    $workout = $workouts->first();
+
+                    return [
+                        'workout_id' => (int) $workout->id,
+                        'workout_ids' => $workouts
+                            ->pluck('id')
+                            ->map(fn ($id) => (int) $id)
+                            ->values()
+                            ->all(),
+                        'day_number' => (int) $dayNumber,
+                        'title' => $this->workoutTitle($workout),
+                        'level' => $workout->level,
+                    ];
+                })
+                ->values()
+                ->all(),
             'total_sets' => $summary['total_sets'],
             'successful_sets' => $summary['successful_sets'],
             'failed_sets' => $summary['failed_sets'],
@@ -996,6 +1034,23 @@ class WorkoutController extends Controller
             'feedback' => $summary['feedback'],
             'chart' => $weeklyChart,
         ];
+    }
+
+    private function programWorkouts(User $user)
+    {
+        $level = trim((string) ($user->training_level ?: 'Beginner'));
+        $matchedLevel = Workout::whereRaw('LOWER(level) = ?', [strtolower($level)])
+            ->value('level')
+            ?: Workout::whereRaw('LOWER(level) = ?', ['beginner'])->value('level');
+        $query = Workout::query();
+
+        if ($matchedLevel) {
+            $query->whereRaw('LOWER(level) = ?', [strtolower($matchedLevel)]);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query->orderBy('day_number')->get();
     }
 
     private function coachReviewsByDay(int $userId): array

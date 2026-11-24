@@ -199,14 +199,21 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email' => ['required', 'email', 'ends_with:@gmail.com'],
+            'portal' => [
+                'sometimes',
+                'string',
+                Rule::in([self::ATHLETE_PORTAL, ...self::STAFF_PORTALS]),
+            ],
             'new_password' => [
                 'required',
                 'string',
                 'min:8',
                 'regex:/^(?=.*[A-Za-z])(?=.*\d).+$/',
+                'confirmed',
             ],
         ], [
             'email.ends_with' => 'Please use a Gmail address',
+            'new_password.confirmed' => 'Password confirmation does not match',
             'new_password.regex' => 'Password must include letters and numbers',
         ]);
 
@@ -217,6 +224,10 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Email not registered',
             ], 404);
+        }
+
+        if ($denied = $this->denyUserForPortal($user, $this->portal($validated))) {
+            return $denied;
         }
 
         $user->password = Hash::make($validated['new_password']);

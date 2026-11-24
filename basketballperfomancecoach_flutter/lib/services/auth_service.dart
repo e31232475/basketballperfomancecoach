@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -120,6 +121,69 @@ class AuthService {
     }
   }
 
+  static Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    if (!AuthValidators.isGmail(email)) {
+      return {
+        "success": false,
+        "message": "Please use a Gmail address",
+      };
+    }
+
+    if (!AuthValidators.isStrongPassword(newPassword)) {
+      return {
+        "success": false,
+        "message":
+            "Password must be at least 8 characters and include letters and numbers",
+      };
+    }
+
+    if (newPassword != newPasswordConfirmation) {
+      return {
+        "success": false,
+        "message": "Passwords do not match",
+      };
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/forgot-password"),
+        headers: _jsonHeaders(),
+        body: jsonEncode({
+          "email": email,
+          "portal": _athletePortal,
+          "new_password": newPassword,
+          "new_password_confirmation": newPasswordConfirmation,
+        }),
+      );
+
+      final data = _decode(response.body);
+
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          data is Map &&
+          data["success"] == true) {
+        return {
+          "success": true,
+          "message": data["message"]?.toString() ?? "Password updated",
+        };
+      }
+
+      return {
+        "success": false,
+        "message": _errorMessage(data, response.statusCode, "Reset failed"),
+      };
+    } catch (_) {
+      return {
+        "success": false,
+        "message": "Unable to connect to authentication server: $baseUrl",
+      };
+    }
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString("token");
@@ -192,6 +256,8 @@ class AuthService {
         "weight": prefs.getDouble("weight"),
         "age": prefs.getInt("age"),
         "training_level": prefs.getString("training_level"),
+        "gender": prefs.getString("gender"),
+        "profile_photo_url": prefs.getString("profile_photo_url"),
         "is_personalized": isPersonalized,
         "personalization_completed": isPersonalized,
       },
@@ -261,7 +327,9 @@ class AuthService {
     required double height,
     required double weight,
     required int age,
-    required String trainingLevel,
+    required String gender,
+    Uint8List? profilePhotoBytes,
+    String? profilePhotoFileName,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -279,34 +347,68 @@ class AuthService {
         };
       }
 
-      final response = await http.post(
-        Uri.parse("$baseUrl/personalization"),
-        headers: _jsonHeaders(token: token),
-        body: jsonEncode({
-          "user_id": userId,
+      final Map<String, dynamic> data;
+
+      if (profilePhotoBytes != null && profilePhotoBytes.isNotEmpty) {
+        final request = http.MultipartRequest(
+          "POST",
+          Uri.parse("$baseUrl/personalization"),
+        );
+        request.headers.addAll(_requestHeaders(token: token));
+        request.fields.addAll({
+          "user_id": userId.toString(),
           "name": name,
-          "height": height,
-          "weight": weight,
-          "age": age,
-          "training_level": trainingLevel,
+          "height": height.toString(),
+          "weight": weight.toString(),
+          "age": age.toString(),
+          "gender": gender,
           "portal": _athletePortal,
-        }),
-      );
+        });
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            "profile_photo",
+            profilePhotoBytes,
+            filename: profilePhotoFileName ?? "profile-photo.jpg",
+          ),
+        );
 
-      final data = _decode(response.body);
+        final streamed = await request.send();
+        final response = await http.Response.fromStream(streamed);
+        final decoded = _decode(response.body);
+        data = decoded is Map<String, dynamic>
+            ? decoded
+            : {
+                "success": false,
+                "message": "Format response tidak valid",
+              };
+      } else {
+        final response = await http.post(
+          Uri.parse("$baseUrl/personalization"),
+          headers: _jsonHeaders(token: token),
+          body: jsonEncode({
+            "user_id": userId,
+            "name": name,
+            "height": height,
+            "weight": weight,
+            "age": age,
+            "gender": gender,
+            "portal": _athletePortal,
+          }),
+        );
+        final decoded = _decode(response.body);
+        data = decoded is Map<String, dynamic>
+            ? decoded
+            : {
+                "success": false,
+                "message": "Format response tidak valid",
+              };
+      }
 
-      if (data is Map && data["success"] == true && data["data"] is Map) {
+      if (data["success"] == true && data["data"] is Map) {
         await _cacheUser(data["data"] as Map);
       }
 
-      if (data is Map<String, dynamic>) {
-        return data;
-      }
-
-      return {
-        "success": false,
-        "message": "Format response tidak valid",
-      };
+      return data;
     } catch (_) {
       return {
         "success": false,
@@ -320,12 +422,18 @@ class AuthService {
     return prefs.getString("training_level");
   }
 
-  static Map<String, String> _jsonHeaders({String? token}) {
+  static Map<String, String> _requestHeaders({String? token}) {
     return {
-      "Content-Type": "application/json",
       "Accept": "application/json",
       if (token != null && token.isNotEmpty && token != "logged_in")
         "Authorization": "Bearer $token",
+    };
+  }
+
+  static Map<String, String> _jsonHeaders({String? token}) {
+    return {
+      "Content-Type": "application/json",
+      ..._requestHeaders(token: token),
     };
   }
 
@@ -524,6 +632,8 @@ class AuthService {
     final height = _toDouble(user["height"]);
     final weight = _toDouble(user["weight"]);
     final age = _toInt(user["age"]);
+    final gender = user["gender"]?.toString();
+    final profilePhotoUrl = user["profile_photo_url"]?.toString();
     final isPersonalized = _isPersonalized(user);
 
     if (name != null && name.isNotEmpty) {
@@ -556,6 +666,14 @@ class AuthService {
       await prefs.setInt("age", age);
     }
 
+    if (gender != null && gender.isNotEmpty) {
+      await prefs.setString("gender", gender);
+    }
+
+    if (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty) {
+      await prefs.setString("profile_photo_url", profilePhotoUrl);
+    }
+
     await prefs.setBool("is_personalized", isPersonalized);
     await prefs.setBool("personalization_completed", isPersonalized);
   }
@@ -579,7 +697,7 @@ class AuthService {
     return user["height"] != null &&
         user["weight"] != null &&
         user["age"] != null &&
-        user["training_level"] != null;
+        user["gender"] != null;
   }
 
   static Future<bool> _refreshCachedUser(int userId, String token) async {

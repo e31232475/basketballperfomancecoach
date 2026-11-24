@@ -6,6 +6,7 @@ import '../../services/firebase_auth_service.dart';
 import '../../utils/auth_validators.dart';
 import '../../widgets/auth_widgets.dart';
 import '../../widgets/bottom_navbar.dart';
+import 'forgot_password_screen.dart';
 import 'personalization_screen.dart';
 import 'register_screen.dart';
 
@@ -284,9 +285,7 @@ class _LoginScreenState extends State<LoginScreen>
                             )
                           : const Icon(Icons.g_mobiledata_rounded, size: 28),
                       label: Text(
-                        isGoogleLoading
-                            ? "PLEASE WAIT"
-                            : "LOGIN WITH GOOGLE",
+                        isGoogleLoading ? "PLEASE WAIT" : "LOGIN WITH GOOGLE",
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
@@ -305,45 +304,76 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildRememberMe() {
-    return InkWell(
-      onTap: isLoading
-          ? null
-          : () {
-              setState(() {
-                rememberMe = !rememberMe;
-              });
-            },
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            Checkbox(
-              value: rememberMe,
-              onChanged: isLoading
-                  ? null
-                  : (value) {
-                      setState(() {
-                        rememberMe = value ?? true;
-                      });
-                    },
-              activeColor: AppColors.primary,
-              checkColor: Colors.white,
-              side: const BorderSide(color: Colors.white38),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: isLoading
+                ? null
+                : () {
+                    setState(() {
+                      rememberMe = !rememberMe;
+                    });
+                  },
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: rememberMe,
+                    onChanged: isLoading
+                        ? null
+                        : (value) {
+                            setState(() {
+                              rememberMe = value ?? true;
+                            });
+                          },
+                    activeColor: AppColors.primary,
+                    checkColor: Colors.white,
+                    side: const BorderSide(color: Colors.white38),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  const Flexible(
+                    child: Text(
+                      "Remember me",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const Text(
-              "Remember me",
-              style: TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        TextButton(
+          onPressed: isLoading || isGoogleLoading
+              ? null
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ForgotPasswordScreen(
+                        initialEmail: emailController.text.trim(),
+                      ),
+                    ),
+                  );
+                },
+          child: const Text(
+            "Forgot Password?",
+            style: TextStyle(
+              color: AppColors.lavender,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

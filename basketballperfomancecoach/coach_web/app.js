@@ -1,5 +1,4 @@
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:8001/api";
-const DEMO_STATE_KEY = "coach_demo_state_v1";
 const storedApiBaseUrl = localStorage.getItem("coach_api_base_url");
 const initialApiBaseUrl =
   !storedApiBaseUrl || storedApiBaseUrl === "http://127.0.0.1:8000/api"
@@ -10,210 +9,12 @@ if (storedApiBaseUrl !== initialApiBaseUrl) {
   localStorage.setItem("coach_api_base_url", initialApiBaseUrl);
 }
 
-const demoData = {
-  dashboard: {
-    total_athletes: 18,
-    active_athletes: 12,
-    pending_reviews: 5,
-    average_performance: 78,
-    average_consistency: 64,
-  },
-  athletes: [
-    {
-      id: 1,
-      name: "Dimas Ramdhan",
-      email: "dimas@gmail.com",
-      training_level: "Beginner",
-      consistency_progress: 71,
-      performance_progress: 82,
-      pending_reviews: 1,
-      last_activity_at: "2026-06-08T08:40:00+07:00",
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Raka Pratama",
-      email: "raka@gmail.com",
-      training_level: "Beginner",
-      consistency_progress: 43,
-      performance_progress: 67,
-      pending_reviews: 2,
-      last_activity_at: "2026-06-07T19:12:00+07:00",
-      status: "needs_attention",
-    },
-    {
-      id: 3,
-      name: "Naufal Akbar",
-      email: "naufal@gmail.com",
-      training_level: "Beginner",
-      consistency_progress: 86,
-      performance_progress: 91,
-      pending_reviews: 0,
-      last_activity_at: "2026-06-08T06:15:00+07:00",
-      status: "active",
-    },
-  ],
-  recordings: [
-    {
-      id: 101,
-      user_id: 1,
-      athlete_name: "Dimas Ramdhan",
-      workout_id: 11,
-      day_number: 5,
-      workout_title: "Day 5",
-      uploaded_at: "2026-06-08T08:40:00+07:00",
-      status: "pending",
-      duration_seconds: 74,
-      video_url:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    },
-    {
-      id: 102,
-      user_id: 2,
-      athlete_name: "Raka Pratama",
-      workout_id: 12,
-      day_number: 3,
-      workout_title: "Day 3",
-      uploaded_at: "2026-06-07T19:12:00+07:00",
-      status: "pending",
-      duration_seconds: 63,
-      video_url:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    },
-    {
-      id: 103,
-      user_id: 3,
-      athlete_name: "Naufal Akbar",
-      workout_id: 13,
-      day_number: 8,
-      workout_title: "Day 8",
-      uploaded_at: "2026-06-08T06:15:00+07:00",
-      status: "approved",
-      score: 91,
-      feedback: "Landing sudah stabil dan ritme latihan konsisten.",
-      duration_seconds: 81,
-      video_url:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-    },
-  ],
-  adminUsers: [
-    {
-      id: 901,
-      name: "Admin BPC",
-      email: "adminbpc@gmail.com",
-      role: "admin",
-      training_level: null,
-      height: null,
-      weight: null,
-      age: null,
-      personalization_completed: true,
-      created_at: "2026-06-08T06:00:00+07:00",
-    },
-    {
-      id: 902,
-      name: "Coach Elite",
-      email: "coachelite@gmail.com",
-      role: "coach",
-      training_level: null,
-      height: null,
-      weight: null,
-      age: null,
-      personalization_completed: true,
-      created_at: "2026-06-08T06:10:00+07:00",
-    },
-    {
-      id: 1,
-      name: "Dimas Ramdhan",
-      email: "dimas@gmail.com",
-      role: "athlete",
-      training_level: "Beginner",
-      height: 180,
-      weight: 75,
-      age: 20,
-      personalization_completed: true,
-      created_at: "2026-06-08T06:20:00+07:00",
-    },
-  ],
-  adminPrograms: [
-    {
-      id: 11,
-      title: "Day 1",
-      name: "Day 1",
-      level: "Beginner",
-      day_number: 1,
-      exercise_count: 2,
-      exercises: [
-        {
-          workout_exercise_id: 1001,
-          exercise_id: 501,
-          name: "Sprint 15 Meter",
-          type: "training",
-          video_url:
-            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-          sets: 4,
-          reps: "15 meter",
-          duration: null,
-          rest_seconds: 30,
-        },
-        {
-          workout_exercise_id: 1002,
-          exercise_id: 502,
-          name: "Tuck Jump",
-          type: "training",
-          video_url:
-            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-          sets: 3,
-          reps: "8",
-          duration: null,
-          rest_seconds: 30,
-        },
-      ],
-    },
-  ],
-  adminVideos: [
-    {
-      id: 1001,
-      workout_exercise_id: 1001,
-      exercise_id: 501,
-      workout_id: 11,
-      workout_title: "Day 1",
-      program_title: "Day 1",
-      day_number: 1,
-      level: "Beginner",
-      exercise_name: "Sprint 15 Meter",
-      exercise_type: "training",
-      video_url:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      file_url:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      sets: 4,
-      reps: "15 meter",
-      duration: null,
-      rest_seconds: 30,
-      has_video: true,
-    },
-    {
-      id: 1002,
-      workout_exercise_id: 1002,
-      exercise_id: 502,
-      workout_id: 11,
-      workout_title: "Day 1",
-      program_title: "Day 1",
-      day_number: 1,
-      level: "Beginner",
-      exercise_name: "Tuck Jump",
-      exercise_type: "training",
-      video_url:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      file_url:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      sets: 3,
-      reps: "8",
-      duration: null,
-      rest_seconds: 30,
-      has_video: true,
-    },
-  ],
+const EMPTY_DASHBOARD = {
+  total_athletes: 0,
+  active_athletes: 0,
+  pending_reviews: 0,
+  average_consistency: 0,
+  athlete_rankings: [],
 };
 
 function emptyAdminUserForm() {
@@ -259,13 +60,12 @@ function emptyAdminVideoForm() {
 }
 
 const state = {
-  view: localStorage.getItem("coach_role") === "admin" ? "admin-users" : "dashboard",
+  view: "dashboard",
   authMode: "login",
   apiBaseUrl: initialApiBaseUrl,
   token: localStorage.getItem("coach_token") || "",
   coachName: localStorage.getItem("coach_name") || "Coach",
   userRole: localStorage.getItem("coach_role") || "",
-  demoMode: localStorage.getItem("coach_demo_mode") === "true",
   loading: false,
   error: "",
   dashboard: null,
@@ -274,16 +74,20 @@ const state = {
   adminUsers: [],
   adminPrograms: [],
   adminVideos: [],
+  adminAthleteVideos: [],
   selectedAthleteId: null,
   selectedRecordingId: null,
   selectedProgramId: null,
   selectedVideoProgramKey: null,
   search: "",
+  recordingSearch: "",
   recordingStatusFilter: "all",
   adminSearch: "",
   adminRoleFilter: "all",
   adminProgramSearch: "",
   adminVideoSearch: "",
+  adminAthleteVideoSearch: "",
+  adminAthleteVideoStatusFilter: "all",
   editingAdminUserId: null,
   adminUserForm: emptyAdminUserForm(),
   editingAdminProgramId: null,
@@ -292,6 +96,7 @@ const state = {
   adminProgramExerciseForm: emptyAdminProgramExerciseForm(),
   editingAdminVideoId: null,
   adminVideoForm: emptyAdminVideoForm(),
+  adminVideoUploadFile: null,
   reviewDraft: {
     status: "approved",
     score: 80,
@@ -304,26 +109,13 @@ if (requestedView && isViewAllowedForRole(requestedView, state.userRole)) {
   state.view = requestedView;
 }
 
-if (state.token === "demo-token") {
-  state.token = "";
-  state.coachName = "Coach";
-  state.userRole = "";
-  state.demoMode = false;
-  localStorage.removeItem("coach_token");
-  localStorage.removeItem("coach_name");
-  localStorage.removeItem("coach_role");
-  localStorage.setItem("coach_demo_mode", "false");
-}
-
 if (state.token && !["coach", "admin"].includes(state.userRole)) {
   state.token = "";
   state.coachName = "Coach";
   state.userRole = "";
-  state.demoMode = false;
   localStorage.removeItem("coach_token");
   localStorage.removeItem("coach_name");
   localStorage.removeItem("coach_role");
-  localStorage.setItem("coach_demo_mode", "false");
 }
 
 const app = document.querySelector("#app");
@@ -340,64 +132,56 @@ function normalizeList(data) {
   return [];
 }
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+function clampPercent(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) return 0;
+  return Math.min(100, Math.max(0, Math.round(number)));
 }
 
-function demoSnapshot() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(DEMO_STATE_KEY) || "null");
-    if (stored && Array.isArray(stored.athletes) && Array.isArray(stored.recordings)) {
-      return stored;
-    }
-  } catch (_) {
-    localStorage.removeItem(DEMO_STATE_KEY);
-  }
-
-  return clone({
-    dashboard: demoData.dashboard,
-    athletes: demoData.athletes,
-    recordings: demoData.recordings,
-    adminUsers: demoData.adminUsers,
-    adminPrograms: demoData.adminPrograms,
-    adminVideos: demoData.adminVideos,
-  });
-}
-
-function persistDemoSnapshot() {
-  if (!state.demoMode) return;
-  localStorage.setItem(
-    DEMO_STATE_KEY,
-    JSON.stringify({
-      dashboard: state.dashboard,
-      athletes: state.athletes,
-      recordings: state.recordings,
-      adminUsers: state.adminUsers,
-      adminPrograms: state.adminPrograms,
-      adminVideos: state.adminVideos,
-    }),
+function rankingScoreForAthlete(athlete) {
+  const consistency = clampPercent(athlete.consistency_progress);
+  const coachScore = clampPercent(
+    athlete.coach_score ?? athlete.performance_progress,
   );
+
+  return clampPercent(athlete.ranking_score ?? (consistency + coachScore) / 2);
 }
 
-function resetDemoSnapshot() {
-  localStorage.removeItem(DEMO_STATE_KEY);
-  state.demoMode = true;
-  localStorage.setItem("coach_demo_mode", "true");
-  loadCoachData();
+function athleteRankings(athletes) {
+  return athletes
+    .map((athlete) => ({
+      id: athlete.id,
+      name: athlete.name || "-",
+      email: athlete.email || "",
+      training_level: athlete.training_level || "-",
+      consistency_progress: clampPercent(athlete.consistency_progress),
+      coach_score: clampPercent(
+        athlete.coach_score ?? athlete.performance_progress,
+      ),
+      coach_review_count: Number(athlete.coach_review_count || 0),
+      completed_days: Number(athlete.completed_days || 0),
+      total_program_days: Number(athlete.total_program_days || 0),
+      ranking_score: rankingScoreForAthlete(athlete),
+    }))
+    .sort((left, right) => {
+      if (right.ranking_score !== left.ranking_score) {
+        return right.ranking_score - left.ranking_score;
+      }
+      if (right.consistency_progress !== left.consistency_progress) {
+        return right.consistency_progress - left.consistency_progress;
+      }
+      if (right.coach_score !== left.coach_score) {
+        return right.coach_score - left.coach_score;
+      }
+      return String(left.name).localeCompare(String(right.name));
+    })
+    .map((athlete, index) => ({ ...athlete, rank: index + 1 }));
 }
 
 function dashboardFromData(athletes, recordings) {
   const totalAthletes = athletes.length;
   const pendingReviews = recordings.filter((item) => item.status === "pending").length;
   const activeAthletes = athletes.filter((athlete) => athlete.last_activity_at).length;
-  const averagePerformance = totalAthletes
-    ? Math.round(
-        athletes.reduce(
-          (sum, athlete) => sum + Number(athlete.performance_progress || 0),
-          0,
-        ) / totalAthletes,
-      )
-    : 0;
   const averageConsistency = totalAthletes
     ? Math.round(
         athletes.reduce(
@@ -411,8 +195,8 @@ function dashboardFromData(athletes, recordings) {
     total_athletes: totalAthletes,
     active_athletes: activeAthletes,
     pending_reviews: pendingReviews,
-    average_performance: averagePerformance,
     average_consistency: averageConsistency,
+    athlete_rankings: athleteRankings(athletes),
   };
 }
 
@@ -435,51 +219,55 @@ async function request(path, options = {}) {
   const body = text ? JSON.parse(text) : {};
 
   if (!response.ok || body.success === false) {
-    throw new Error(body.message || `Request gagal (${response.status})`);
+    if (response.status === 401 && state.token) {
+      state.token = "";
+      state.coachName = "Coach";
+      state.userRole = "";
+      localStorage.removeItem("coach_token");
+      localStorage.removeItem("coach_name");
+      localStorage.removeItem("coach_role");
+    }
+
+    const validationMessage = body.errors
+      ? Object.values(body.errors).flat().find(Boolean)
+      : null;
+    throw new Error(validationMessage || body.message || `Request gagal (${response.status})`);
   }
 
   return body;
 }
 
-async function loadCoachData({ forceApi = false } = {}) {
+async function loadCoachData() {
   state.loading = true;
   state.error = "";
   render();
 
-  if (state.demoMode && !forceApi) {
-    await delay(250);
-    const snapshot = demoSnapshot();
-    state.athletes = snapshot.athletes;
-    state.recordings = snapshot.recordings;
-    state.adminUsers = snapshot.adminUsers || demoData.adminUsers;
-    state.adminPrograms = snapshot.adminPrograms || demoData.adminPrograms;
-    state.adminVideos = snapshot.adminVideos || demoData.adminVideos;
-    state.dashboard =
-      snapshot.dashboard || dashboardFromData(state.athletes, state.recordings);
-    state.loading = false;
-    render();
-    return;
-  }
-
   try {
     if (state.userRole === "admin") {
-      const [adminUsers, adminPrograms, adminVideos] = await Promise.all([
+      const [adminUsers, adminPrograms, adminVideos, adminAthleteVideos] = await Promise.all([
         request("/admin/users"),
         request("/admin/programs"),
         request("/admin/videos"),
+        request("/admin/athlete-videos?status=all"),
       ]);
 
       state.adminUsers = normalizeList(adminUsers);
       state.adminPrograms = normalizeList(adminPrograms);
       state.adminVideos = normalizeList(adminVideos);
+      state.adminAthleteVideos = normalizeList(adminAthleteVideos);
       state.dashboard = null;
       state.athletes = [];
       state.recordings = [];
-      state.view = ["admin-users", "admin-programs", "admin-videos", "settings"].includes(
-        state.view,
-      )
+      state.view = [
+        "dashboard",
+        "admin-users",
+        "admin-programs",
+        "admin-videos",
+        "admin-athlete-videos",
+        "settings",
+      ].includes(state.view)
         ? state.view
-        : "admin-users";
+        : "dashboard";
     } else {
       const [dashboard, athletes, recordings] = await Promise.all([
         request("/coach/dashboard"),
@@ -493,12 +281,11 @@ async function loadCoachData({ forceApi = false } = {}) {
       state.adminUsers = [];
       state.adminPrograms = [];
       state.adminVideos = [];
-      state.view = ["dashboard", "athletes", "recordings", "settings"].includes(state.view)
+      state.adminAthleteVideos = [];
+      state.view = ["dashboard", "athletes", "recordings", "rank", "settings"].includes(state.view)
         ? state.view
         : "dashboard";
     }
-    state.demoMode = false;
-    localStorage.setItem("coach_demo_mode", "false");
   } catch (error) {
     state.error = error.message || "Gagal mengambil data coach dari API.";
   } finally {
@@ -539,13 +326,11 @@ async function login(event) {
     state.token = token;
     state.coachName = user.name || "Coach";
     state.userRole = role;
-    state.view = role === "admin" ? "admin-users" : "dashboard";
-    state.demoMode = false;
+    state.view = "dashboard";
     localStorage.setItem("coach_token", token);
     localStorage.setItem("coach_name", state.coachName);
     localStorage.setItem("coach_role", role);
-    localStorage.setItem("coach_demo_mode", "false");
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -604,13 +389,11 @@ async function register(event) {
     state.token = token;
     state.coachName = user.name || name || "Coach";
     state.userRole = registeredRole;
-    state.view = registeredRole === "admin" ? "admin-users" : "dashboard";
-    state.demoMode = false;
+    state.view = "dashboard";
     localStorage.setItem("coach_token", token);
     localStorage.setItem("coach_name", state.coachName);
     localStorage.setItem("coach_role", registeredRole);
-    localStorage.setItem("coach_demo_mode", "false");
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -631,6 +414,7 @@ function logout() {
   state.adminUsers = [];
   state.adminPrograms = [];
   state.adminVideos = [];
+  state.adminAthleteVideos = [];
   state.view = "dashboard";
   state.authMode = "login";
   render();
@@ -652,7 +436,9 @@ function openReview(id) {
   const recording = state.recordings.find((item) => Number(item.id) === Number(id));
   state.selectedRecordingId = Number(id);
   state.reviewDraft = {
-    status: recording?.status === "rejected" ? "needs_revision" : "approved",
+    status: ["needs_revision", "rejected"].includes(recording?.status)
+      ? "needs_revision"
+      : "approved",
     score: recording?.score || 80,
     feedback: recording?.feedback || "",
   };
@@ -674,21 +460,37 @@ async function submitReview(event) {
   const score = Number(form.get("score") || 0);
   const feedback = String(form.get("feedback") || "").trim();
 
+  if (!["approved", "needs_revision"].includes(status)) {
+    state.error = "Pilih status review yang valid.";
+    render();
+    return;
+  }
+
+  if (!Number.isInteger(score) || score < 0 || score > 100) {
+    state.error = "Score review wajib berupa angka bulat 0 sampai 100.";
+    render();
+    return;
+  }
+
+  if (!feedback) {
+    state.error = "Catatan coach wajib diisi agar atlet memahami hasil review.";
+    render();
+    return;
+  }
+
   const payload = { status, score, feedback };
   let reviewResult = null;
 
-  if (!state.demoMode) {
-    try {
-      const response = await request(`/coach/recordings/${recording.id}/review`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      reviewResult = response.data || {};
-    } catch (error) {
-      state.error = error.message;
-      render();
-      return;
-    }
+  try {
+    const response = await request(`/coach/recordings/${recording.id}/review`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    reviewResult = response.data || {};
+  } catch (error) {
+    state.error = error.message;
+    render();
+    return;
   }
 
   const savedRecording = reviewResult?.recording;
@@ -728,8 +530,8 @@ async function submitReview(event) {
   });
 
   state.dashboard = dashboardFromData(state.athletes, state.recordings);
-  persistDemoSnapshot();
   state.selectedRecordingId = null;
+  state.error = "";
   render();
 }
 
@@ -764,13 +566,106 @@ function recordingsForSelectedAthlete() {
 }
 
 function filteredRecordings() {
-  if (state.recordingStatusFilter === "all") {
-    return state.recordings;
+  const query = state.recordingSearch.trim().toLowerCase();
+
+  return state.recordings.filter((recording) => {
+    const statusMatches =
+      state.recordingStatusFilter === "all" ||
+      recording.status === state.recordingStatusFilter;
+    const queryMatches =
+      !query ||
+      [
+        recording.athlete_name,
+        recording.athlete_email,
+        recording.athlete_training_level,
+        recording.user_id,
+        recording.workout_title,
+        recording.workout_level,
+        recording.day_number,
+        recording.feedback,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query));
+
+    return statusMatches && queryMatches;
+  });
+}
+
+function reviewedRecordingsForSelectedAthlete() {
+  return recordingsForSelectedAthlete().filter(
+    (recording) =>
+      recording.status !== "pending" &&
+      (recording.reviewed_at || recording.feedback || recording.score !== null),
+  );
+}
+
+function adminSummary() {
+  const programVideos = programVideoRows();
+  const exercises = state.adminPrograms.reduce(
+    (total, program) => total + Number(program.exercise_count || program.exercises?.length || 0),
+    0,
+  );
+
+  return {
+    users: state.adminUsers.length,
+    athletes: state.adminUsers.filter((user) => user.role === "athlete").length,
+    coaches: state.adminUsers.filter((user) => user.role === "coach").length,
+    admins: state.adminUsers.filter((user) => user.role === "admin").length,
+    programs: state.adminPrograms.length,
+    exercises,
+    videos: programVideos.filter((video) => video.video_url || video.file_url).length,
+    pendingAthleteVideos: state.adminAthleteVideos.filter(
+      (recording) => recording.status === "pending",
+    ).length,
+  };
+}
+
+function filteredAdminAthleteVideos() {
+  const query = state.adminAthleteVideoSearch.trim().toLowerCase();
+
+  return state.adminAthleteVideos.filter((recording) => {
+    const statusMatches =
+      state.adminAthleteVideoStatusFilter === "all" ||
+      recording.status === state.adminAthleteVideoStatusFilter;
+    const queryMatches =
+      !query ||
+      [
+        recording.athlete_name,
+        recording.athlete_email,
+        recording.user_id,
+        recording.workout_title,
+        recording.day_number,
+        recording.status,
+        recording.video_url,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query));
+
+    return statusMatches && queryMatches;
+  });
+}
+
+async function deleteAdminAthleteVideo(id) {
+  const recording = state.adminAthleteVideos.find((item) => Number(item.id) === Number(id));
+  if (!recording) return;
+
+  const label = `${recording.athlete_name || "atlet"} Day ${recording.day_number || "-"}`;
+  if (!confirm(`Hapus video ${label}? File rekaman dan review terkait ikut dihapus.`)) {
+    return;
   }
 
-  return state.recordings.filter(
-    (recording) => recording.status === state.recordingStatusFilter,
-  );
+  state.loading = true;
+  state.error = "";
+  render();
+
+  try {
+    await request(`/admin/athlete-videos/${id}`, { method: "DELETE" });
+    await loadCoachData();
+  } catch (error) {
+    state.error = error.message;
+    state.loading = false;
+    render();
+  }
 }
 
 function filteredAdminUsers() {
@@ -850,26 +745,6 @@ async function submitAdminUser(event) {
   render();
 
   try {
-    if (state.demoMode) {
-      const saved = {
-        id:
-          editingId ||
-          Math.max(0, ...state.adminUsers.map((user) => Number(user.id) || 0)) + 1,
-        ...payload,
-        personalization_completed: payload.role !== "athlete",
-        created_at: new Date().toISOString(),
-      };
-      delete saved.password;
-      delete saved.password_confirmation;
-      state.adminUsers = editingId
-        ? state.adminUsers.map((user) => (Number(user.id) === Number(editingId) ? saved : user))
-        : [...state.adminUsers, saved];
-      state.loading = false;
-      resetAdminUserForm();
-      persistDemoSnapshot();
-      return;
-    }
-
     await request(editingId ? `/admin/users/${editingId}` : "/admin/users", {
       method: editingId ? "PUT" : "POST",
       body: JSON.stringify(payload),
@@ -877,7 +752,7 @@ async function submitAdminUser(event) {
 
     state.editingAdminUserId = null;
     state.adminUserForm = emptyAdminUserForm();
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -898,16 +773,8 @@ async function deleteAdminUser(id) {
   render();
 
   try {
-    if (state.demoMode) {
-      state.adminUsers = state.adminUsers.filter((item) => Number(item.id) !== Number(id));
-      state.loading = false;
-      persistDemoSnapshot();
-      render();
-      return;
-    }
-
     await request(`/admin/users/${id}`, { method: "DELETE" });
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -969,31 +836,6 @@ async function submitAdminProgram(event) {
   render();
 
   try {
-    if (state.demoMode) {
-      const saved = {
-        id:
-          editingId ||
-          Math.max(0, ...state.adminPrograms.map((program) => Number(program.id) || 0)) + 1,
-        ...payload,
-        exercise_count:
-          state.adminPrograms.find((program) => Number(program.id) === Number(editingId))
-            ?.exercise_count || 0,
-        exercises:
-          state.adminPrograms.find((program) => Number(program.id) === Number(editingId))
-            ?.exercises || [],
-      };
-      state.adminPrograms = editingId
-        ? state.adminPrograms.map((program) =>
-            Number(program.id) === Number(editingId) ? saved : program,
-          )
-        : [...state.adminPrograms, saved];
-      state.selectedProgramId = saved.id;
-      state.loading = false;
-      resetAdminProgramForm();
-      persistDemoSnapshot();
-      return;
-    }
-
     const response = await request(
       editingId ? `/admin/programs/${editingId}` : "/admin/programs",
       {
@@ -1005,7 +847,7 @@ async function submitAdminProgram(event) {
     state.selectedProgramId = (response.data || response).id || state.selectedProgramId;
     state.editingAdminProgramId = null;
     state.adminProgramForm = emptyAdminProgramForm();
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -1026,24 +868,11 @@ async function deleteAdminProgram(id) {
   render();
 
   try {
-    if (state.demoMode) {
-      state.adminPrograms = state.adminPrograms.filter(
-        (item) => Number(item.id) !== Number(id),
-      );
-      if (Number(state.selectedProgramId) === Number(id)) {
-        state.selectedProgramId = null;
-      }
-      state.loading = false;
-      persistDemoSnapshot();
-      render();
-      return;
-    }
-
     await request(`/admin/programs/${id}`, { method: "DELETE" });
     if (Number(state.selectedProgramId) === Number(id)) {
       state.selectedProgramId = null;
     }
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -1104,40 +933,17 @@ async function submitProgramExercise(event) {
   const payload = programExercisePayload(new FormData(event.currentTarget));
   const editingId = state.editingProgramExerciseId;
 
+  if (payload.video_url && !isValidVideoSource(payload.video_url)) {
+    state.error = "Video URL harus berupa http(s), /storage/..., atau /videos/....";
+    render();
+    return;
+  }
+
   state.loading = true;
   state.error = "";
   render();
 
   try {
-    if (state.demoMode) {
-      const saved = {
-        workout_exercise_id:
-          editingId ||
-          Math.max(
-            0,
-            ...(program.exercises || []).map((exercise) => Number(exercise.workout_exercise_id) || 0),
-          ) + 1,
-        exercise_id:
-          Math.max(0, ...(program.exercises || []).map((exercise) => Number(exercise.exercise_id) || 0)) +
-          1,
-        ...payload,
-      };
-      state.adminPrograms = state.adminPrograms.map((item) => {
-        if (Number(item.id) !== Number(program.id)) return item;
-        const exercises = editingId
-          ? (item.exercises || []).map((exercise) =>
-              Number(exercise.workout_exercise_id) === Number(editingId) ? saved : exercise,
-            )
-          : [...(item.exercises || []), saved];
-        return { ...item, exercises, exercise_count: exercises.length };
-      });
-      syncProgramVideoSnapshot();
-      state.loading = false;
-      resetProgramExerciseForm();
-      persistDemoSnapshot();
-      return;
-    }
-
     await request(
       editingId
         ? `/admin/program-exercises/${editingId}`
@@ -1150,7 +956,7 @@ async function submitProgramExercise(event) {
 
     state.editingProgramExerciseId = null;
     state.adminProgramExerciseForm = emptyAdminProgramExerciseForm();
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -1171,23 +977,8 @@ async function deleteProgramExercise(id) {
   render();
 
   try {
-    if (state.demoMode) {
-      state.adminPrograms = state.adminPrograms.map((item) => {
-        if (Number(item.id) !== Number(program.id)) return item;
-        const exercises = (item.exercises || []).filter(
-          (exercise) => Number(exercise.workout_exercise_id) !== Number(id),
-        );
-        return { ...item, exercises, exercise_count: exercises.length };
-      });
-      syncProgramVideoSnapshot();
-      state.loading = false;
-      persistDemoSnapshot();
-      render();
-      return;
-    }
-
     await request(`/admin/program-exercises/${id}`, { method: "DELETE" });
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -1235,23 +1026,6 @@ function normalizeProgramVideoRow(video) {
 function programVideoRows() {
   const rows = state.adminVideos.length ? state.adminVideos : programVideoRowsFromPrograms();
   return rows.map(normalizeProgramVideoRow);
-}
-
-function syncProgramVideoSnapshot() {
-  state.adminVideos = programVideoRowsFromPrograms();
-}
-
-function updateProgramExerciseVideo(workoutExerciseId, videoUrl) {
-  state.adminPrograms = state.adminPrograms.map((program) => {
-    const exercises = (program.exercises || []).map((exercise) =>
-      Number(exercise.workout_exercise_id) === Number(workoutExerciseId)
-        ? { ...exercise, video_url: videoUrl || "" }
-        : exercise,
-    );
-
-    return { ...program, exercises };
-  });
-  syncProgramVideoSnapshot();
 }
 
 function filteredAdminVideos() {
@@ -1325,6 +1099,7 @@ function selectAdminVideoProgram(key) {
 function resetAdminVideoForm() {
   state.editingAdminVideoId = null;
   state.adminVideoForm = emptyAdminVideoForm();
+  state.adminVideoUploadFile = null;
   render();
 }
 
@@ -1339,14 +1114,76 @@ function editAdminVideo(id) {
     workout_exercise_id: video.workout_exercise_id || "",
     video_url: video.video_url || "",
   };
+  state.adminVideoUploadFile = null;
   render();
 }
 
 function adminVideoPayload(form) {
+  const file = state.adminVideoUploadFile || form.get("video");
+
   return {
     workout_exercise_id: Number(form.get("workout_exercise_id") || 0),
     video_url: String(form.get("video_url") || "").trim(),
+    video_file: file instanceof File && file.size > 0 ? file : null,
   };
+}
+
+function isVideoUploadFile(file) {
+  if (!file) return false;
+  if (String(file.type || "").toLowerCase().startsWith("video/")) return true;
+  return /\.(mp4|mov|m4v|webm|avi|mkv)$/i.test(file.name || "");
+}
+
+function isValidVideoSource(value) {
+  const source = String(value || "").trim();
+  if (!source) return true;
+  if (source.startsWith("/storage/") || source.startsWith("/videos/")) return true;
+
+  try {
+    const url = new URL(source);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch (_) {
+    return false;
+  }
+}
+
+function setAdminVideoUploadFile(file) {
+  if (!file) {
+    state.adminVideoUploadFile = null;
+    render();
+    return;
+  }
+
+  if (!isVideoUploadFile(file)) {
+    state.error = "File yang di-upload harus berupa video.";
+    state.adminVideoUploadFile = null;
+    render();
+    return;
+  }
+
+
+  if (file.size > 512000 * 1024) {
+    state.error = "Ukuran file video maksimal 500 MB.";
+    state.adminVideoUploadFile = null;
+    render();
+    return;
+  }
+
+  state.error = "";
+  state.adminVideoUploadFile = file;
+  render();
+}
+
+function adminVideoFormData(payload) {
+  const formData = new FormData();
+  formData.append("workout_exercise_id", String(payload.workout_exercise_id));
+  formData.append("video", payload.video_file);
+
+  if (payload.video_url) {
+    formData.append("video_url", payload.video_url);
+  }
+
+  return formData;
 }
 
 async function submitAdminVideo(event) {
@@ -1360,8 +1197,15 @@ async function submitAdminVideo(event) {
     return;
   }
 
-  if (!payload.video_url) {
-    state.error = "Video URL wajib diisi.";
+  if (!payload.video_url && !payload.video_file) {
+    state.error = "Isi Video URL atau drop file video dulu.";
+    render();
+    return;
+  }
+
+
+  if (payload.video_url && !isValidVideoSource(payload.video_url)) {
+    state.error = "Video URL harus berupa http(s), /storage/..., atau /videos/....";
     render();
     return;
   }
@@ -1371,22 +1215,25 @@ async function submitAdminVideo(event) {
   render();
 
   try {
-    if (state.demoMode) {
-      updateProgramExerciseVideo(payload.workout_exercise_id, payload.video_url);
-      state.loading = false;
-      resetAdminVideoForm();
-      persistDemoSnapshot();
-      return;
+    if (payload.video_file) {
+      await request("/admin/videos", {
+        method: "POST",
+        body: adminVideoFormData(payload),
+      });
+    } else {
+      await request(state.editingAdminVideoId ? `/admin/videos/${editingId}` : "/admin/videos", {
+        method: state.editingAdminVideoId ? "PUT" : "POST",
+        body: JSON.stringify({
+          workout_exercise_id: payload.workout_exercise_id,
+          video_url: payload.video_url,
+        }),
+      });
     }
-
-    await request(state.editingAdminVideoId ? `/admin/videos/${editingId}` : "/admin/videos", {
-      method: state.editingAdminVideoId ? "PUT" : "POST",
-      body: JSON.stringify(payload),
-    });
 
     state.editingAdminVideoId = null;
     state.adminVideoForm = emptyAdminVideoForm();
-    await loadCoachData({ forceApi: true });
+    state.adminVideoUploadFile = null;
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -1409,16 +1256,8 @@ async function deleteAdminVideo(id) {
   render();
 
   try {
-    if (state.demoMode) {
-      updateProgramExerciseVideo(id, "");
-      state.loading = false;
-      persistDemoSnapshot();
-      render();
-      return;
-    }
-
     await request(`/admin/videos/${id}`, { method: "DELETE" });
-    await loadCoachData({ forceApi: true });
+    await loadCoachData();
   } catch (error) {
     state.error = error.message;
     state.loading = false;
@@ -1430,11 +1269,36 @@ function workoutDaysForAthlete(athlete) {
   const recordings = state.recordings.filter(
     (recording) => Number(recording.user_id) === Number(athlete.id),
   );
+  const configuredPrograms = Array.isArray(athlete.program_days)
+    ? athlete.program_days
+        .map((program) => ({
+          workoutId: Number(program.workout_id) || null,
+          dayNumber: Number(program.day_number) || null,
+          title: program.title || `Day ${program.day_number || "-"}`,
+          level: program.level || athlete.training_level || null,
+        }))
+        .filter((program) => program.dayNumber !== null)
+    : [];
+  const fallbackTotal = Math.max(1, Number(athlete.total_program_days) || 14);
+  const fallbackStart =
+    String(athlete.training_level || "").toLowerCase() === "intermediate" ? 15 : 1;
+  const programs = configuredPrograms.length
+    ? configuredPrograms
+    : Array.from({ length: fallbackTotal }, (_, index) => ({
+        workoutId: null,
+        dayNumber: fallbackStart + index,
+        title: `Day ${fallbackStart + index}`,
+        level: athlete.training_level || null,
+      }));
 
-  return Array.from({ length: 14 }, (_, index) => {
-    const dayNumber = index + 1;
+  return programs.map((program) => {
+    const dayNumber = program.dayNumber;
     const dayRecordings = recordings
-      .filter((item) => Number(item.day_number) === dayNumber)
+      .filter((item) =>
+        program.workoutId
+          ? Number(item.workout_id) === program.workoutId
+          : Number(item.day_number) === dayNumber,
+      )
       .sort((a, b) => new Date(b.uploaded_at || 0) - new Date(a.uploaded_at || 0));
     const recording = dayRecordings[0];
 
@@ -1445,6 +1309,8 @@ function workoutDaysForAthlete(athlete) {
         status: "not_started",
         score: null,
         label: "Belum latihan",
+        workoutTitle: program.title,
+        workoutLevel: program.level,
       };
     }
 
@@ -1456,6 +1322,8 @@ function workoutDaysForAthlete(athlete) {
         score: recording.score ?? null,
         label: "Disetujui coach",
         recordingCount: dayRecordings.length,
+        workoutTitle: recording.workout_title || program.title,
+        workoutLevel: recording.workout_level || program.level,
       };
     }
 
@@ -1467,6 +1335,8 @@ function workoutDaysForAthlete(athlete) {
         score: recording.score ?? null,
         label: "Perlu ulang",
         recordingCount: dayRecordings.length,
+        workoutTitle: recording.workout_title || program.title,
+        workoutLevel: recording.workout_level || program.level,
       };
     }
 
@@ -1477,6 +1347,8 @@ function workoutDaysForAthlete(athlete) {
       score: null,
       label: "Menunggu review",
       recordingCount: dayRecordings.length,
+      workoutTitle: recording.workout_title || program.title,
+      workoutLevel: recording.workout_level || program.level,
     };
   });
 }
@@ -1729,15 +1601,18 @@ function renderSidebar() {
   const nav =
     state.userRole === "admin"
       ? [
+          ["dashboard", "D", "Dashboard"],
           ["admin-users", "U", "User"],
           ["admin-programs", "P", "Program"],
           ["admin-videos", "V", "Video"],
+          ["admin-athlete-videos", "A", "Video Atlet"],
           ["settings", "S", "API"],
         ]
       : [
           ["dashboard", "D", "Dashboard"],
           ["athletes", "A", "Atlet"],
           ["recordings", "R", "Review"],
+          ["rank", "K", "Rank"],
           ["settings", "S", "API"],
         ];
 
@@ -1757,11 +1632,11 @@ function renderSidebar() {
               </button>
             `,
           )
-          .join("")}
+        .join("")}
       </nav>
       <div class="sidebar-footer">
         <div class="api-box">
-          <div class="api-label">${state.demoMode ? "Mode Demo" : "API Aktif"}</div>
+          <div class="api-label">API Aktif</div>
           <div class="api-value">${escapeHtml(state.apiBaseUrl)}</div>
         </div>
         <button class="btn ghost" id="logout-button" type="button">Keluar</button>
@@ -1772,7 +1647,10 @@ function renderSidebar() {
 
 function renderMainView() {
   const hasAdminData =
-    state.adminUsers.length || state.adminPrograms.length || state.adminVideos.length;
+    state.adminUsers.length ||
+    state.adminPrograms.length ||
+    state.adminVideos.length ||
+    state.adminAthleteVideos.length;
 
   if (state.loading && state.userRole === "admin" && !hasAdminData) {
     return `<div class="empty">Memuat data admin...</div>`;
@@ -1784,11 +1662,13 @@ function renderMainView() {
 
   if (state.view === "athletes") return renderAthletes();
   if (state.view === "recordings") return renderRecordings();
+  if (state.view === "rank") return renderRank();
   if (state.view === "admin-users" || state.view === "admin") return renderAdminUsers();
   if (state.view === "admin-programs") return renderAdminPrograms();
   if (state.view === "admin-videos") return renderAdminVideos();
+  if (state.view === "admin-athlete-videos") return renderAdminAthleteVideos();
   if (state.view === "settings") return renderSettings();
-  return renderDashboard();
+  return state.userRole === "admin" ? renderAdminDashboard() : renderDashboard();
 }
 
 function renderRefreshButton() {
@@ -1796,7 +1676,7 @@ function renderRefreshButton() {
 }
 
 function renderDashboard() {
-  const dashboard = state.dashboard || demoData.dashboard;
+  const dashboard = state.dashboard || EMPTY_DASHBOARD;
   const pending = state.recordings.filter((item) => item.status === "pending");
   const attention = state.athletes
     .filter(
@@ -1812,9 +1692,8 @@ function renderDashboard() {
     ])}
     <section class="grid kpi-grid">
       ${renderKpi("Total Atlet", dashboard.total_athletes, "Semua atlet terdaftar")}
-      ${renderKpi("Atlet Aktif", dashboard.active_athletes, "Aktif latihan beberapa hari terakhir")}
+      ${renderKpi("Atlet Aktif", dashboard.active_athletes, "Memiliki aktivitas dalam 7 hari terakhir")}
       ${renderKpi("Perlu Review", dashboard.pending_reviews, "Video menunggu coach")}
-      ${renderKpi("Avg Performance", `${dashboard.average_performance}%`, "Berdasarkan validasi coach")}
     </section>
     <section class="grid two-col" style="margin-top: 16px">
       <div class="card pad">
@@ -1831,6 +1710,76 @@ function renderDashboard() {
           attention.length
             ? `<div class="list">${attention.map(renderAttentionItem).join("")}</div>`
             : `<div class="empty">Semua atlet terlihat aman.</div>`
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderRank() {
+  const dashboard = state.dashboard || EMPTY_DASHBOARD;
+  const rankings =
+    Array.isArray(dashboard.athlete_rankings) && dashboard.athlete_rankings.length
+      ? dashboard.athlete_rankings
+      : athleteRankings(state.athletes);
+
+  return `
+    ${renderTopbar("Rank", "Ranking atlet berdasarkan consistency dan nilai review coach.", [
+      renderRefreshButton(),
+    ])}
+    <section class="card pad">
+      <div class="program-detail-head">
+        <div>
+          <h2 class="card-title">Ranking Atlet</h2>
+          <div class="muted small ranking-note">Skor ranking = 50% consistency + 50% nilai review coach.</div>
+        </div>
+        <span class="pill info">${escapeHtml(rankings.length)} atlet</span>
+      </div>
+      ${
+        rankings.length
+          ? `<div class="list rank-list">${rankings.map(renderRankingItem).join("")}</div>`
+          : `<div class="empty">Belum ada atlet untuk diranking.</div>`
+      }
+    </section>
+  `;
+}
+
+function renderAdminDashboard() {
+  const summary = adminSummary();
+  const recentUsers = state.adminUsers.slice(0, 5);
+  const programCoverage = groupedAdminVideos(programVideoRows()).slice(0, 5);
+
+  return `
+    ${renderTopbar("Dashboard Admin", "Ringkasan user, program, exercise, dan video yang dikelola sistem.", [
+      renderRefreshButton(),
+    ])}
+    <section class="grid kpi-grid">
+      ${renderKpi("Total User", summary.users, `${summary.athletes} atlet · ${summary.coaches} coach · ${summary.admins} admin`)}
+      ${renderKpi("Total Program", summary.programs, "Program workout yang tersedia")}
+      ${renderKpi("Total Exercise", summary.exercises, "Exercise berada di dalam program")}
+      ${renderKpi("Video Latihan", summary.videos, "Video preview yang sudah terpasang")}
+    </section>
+    <section class="grid two-col" style="margin-top: 16px">
+      <div class="card pad">
+        <div class="program-detail-head">
+          <div>
+            <h2 class="card-title">Komposisi User</h2>
+            <div class="muted small">Role dapat diubah dari menu User.</div>
+          </div>
+          ${summary.pendingAthleteVideos ? `<span class="pill warning">${escapeHtml(summary.pendingAthleteVideos)} video pending</span>` : `<span class="pill success">Review clear</span>`}
+        </div>
+        ${
+          recentUsers.length
+            ? `<div class="list">${recentUsers.map(renderAdminUserSummaryItem).join("")}</div>`
+            : `<div class="empty">Belum ada user.</div>`
+        }
+      </div>
+      <div class="card pad">
+        <h2 class="card-title">Kelengkapan Video Program</h2>
+        ${
+          programCoverage.length
+            ? `<div class="list">${programCoverage.map(renderProgramCoverageItem).join("")}</div>`
+            : `<div class="empty">Belum ada program atau exercise.</div>`
         }
       </div>
     </section>
@@ -1876,6 +1825,7 @@ function renderAthletes() {
 
 function renderAthleteDetail(athlete) {
   const recordings = recordingsForSelectedAthlete();
+  const reviewHistory = reviewedRecordingsForSelectedAthlete();
   const days = workoutDaysForAthlete(athlete);
 
   return `
@@ -1883,13 +1833,14 @@ function renderAthleteDetail(athlete) {
       `<button class="btn ghost" id="back-athletes" type="button">Kembali</button>`,
     ])}
     <section class="grid kpi-grid">
-      ${renderKpi("Consistency", `${athlete.consistency_progress || 0}%`, "Otomatis dari aktivitas latihan")}
+      ${renderKpi("Consistency", `${athlete.consistency_progress || 0}%`, `${athlete.completed_days || 0} selesai dari ${athlete.total_program_days || days.length} workout level ini`)}
       ${renderKpi("Performance", `${athlete.performance_progress || 0}%`, "Dari validasi coach")}
       ${renderKpi("Pending Review", athlete.pending_reviews || 0, "Video belum divalidasi")}
       ${renderKpi("Level", athlete.training_level || "-", "Program aktif atlet")}
     </section>
     <section class="card pad" style="margin-top: 16px">
-      <h2 class="card-title">Progress Day 1-14</h2>
+      <h2 class="card-title">Progress Program ${escapeHtml(athlete.training_level || "Atlet")}</h2>
+      <div class="muted small" style="margin-bottom: 12px">${escapeHtml(days.length)} workout mengikuti level dan urutan day pada database.</div>
       <div class="workout-days">
         ${days.map(renderDayTile).join("")}
       </div>
@@ -1907,10 +1858,39 @@ function renderAthleteDetail(athlete) {
         <h2 class="card-title">Profil</h2>
         <div class="list">
           ${renderProfileLine("Email", athlete.email || "-")}
+          ${renderProfileLine("Tinggi", athlete.height ? `${athlete.height} cm` : "-")}
+          ${renderProfileLine("Berat", athlete.weight ? `${athlete.weight} kg` : "-")}
+          ${renderProfileLine("Usia", athlete.age ? `${athlete.age} tahun` : "-")}
+          ${renderProfileLine("Program", `${athlete.training_level || "-"} · ${athlete.total_program_days || days.length} workout`)}
           ${renderProfileLine("Status", statusLabel(athlete.status))}
           ${renderProfileLine("Terakhir latihan", formatDateTime(athlete.last_activity_at))}
           ${renderProfileLine("Catatan", "Performance progress hanya berubah setelah coach memberi review.")}
         </div>
+      </div>
+    </section>
+    <section class="card pad" style="margin-top: 16px">
+      <h2 class="card-title">Riwayat Review Coach</h2>
+      <div class="muted small" style="margin-bottom: 12px">Bukti evaluasi tersimpan lengkap dengan status, score, feedback, dan waktu review.</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Workout</th>
+              <th>Status</th>
+              <th>Score</th>
+              <th>Feedback</th>
+              <th>Direview</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              reviewHistory.length
+                ? reviewHistory.map(renderCoachReviewHistoryRow).join("")
+                : `<tr><td colspan="6"><div class="empty">Belum ada review coach untuk atlet ini.</div></td></tr>`
+            }
+          </tbody>
+        </table>
       </div>
     </section>
   `;
@@ -1930,6 +1910,10 @@ function renderRecordings() {
       renderRefreshButton(),
     ])}
     <section class="card pad">
+      <div class="search-row">
+        <input class="input search-input" id="recording-search" placeholder="Cari atlet, workout, day, atau feedback" value="${escapeAttr(state.recordingSearch)}" />
+        <span class="pill info">${escapeHtml(recordings.length)} rekaman</span>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -2198,6 +2182,7 @@ function renderAdminVideos() {
   const form = state.adminVideoForm;
   const editing = Boolean(state.editingAdminVideoId);
   const exerciseOptions = programVideoRows();
+  const uploadFile = state.adminVideoUploadFile;
 
   return `
     ${renderTopbar("Video", "CRUD video preview untuk workout list di aplikasi atlet.", [
@@ -2224,12 +2209,24 @@ function renderAdminVideos() {
         </div>
         <div class="field">
           <label for="video-url">Video URL</label>
-          <input class="input" id="video-url" name="video_url" value="${escapeAttr(form.video_url)}" placeholder="https://... atau /storage/..." required />
+          <input class="input" id="video-url" name="video_url" value="${escapeAttr(form.video_url)}" placeholder="https://... atau /storage/..." />
+        </div>
+        <div class="field">
+          <label for="admin-video-file">Upload Video</label>
+          <label class="upload-dropzone" for="admin-video-file" data-video-dropzone>
+            <input id="admin-video-file" name="video" type="file" accept="video/*" hidden />
+            <span class="upload-dropzone-title">${uploadFile ? escapeHtml(uploadFile.name) : "Drop file video di sini"}</span>
+            <span class="upload-dropzone-note">${uploadFile ? `${formatFileSize(uploadFile.size)} siap di-upload` : "atau klik untuk pilih file"}</span>
+          </label>
         </div>
         ${
-          form.video_url
-            ? `<div class="notice">Preview aktif: <a class="table-link" href="${escapeAttr(videoPlayerUrl(resolveBackendAssetUrl(form.video_url), { title: "Preview Video Latihan", subtitle: "Video yang sedang diedit", view: "admin-videos" }))}" target="_blank" rel="noreferrer">Buka video</a></div>`
-            : `<div class="notice">Video ini dipakai tombol preview/play di workout list aplikasi atlet.</div>`
+          form.video_url || uploadFile
+            ? `<div class="notice">${
+                uploadFile
+                  ? `File siap upload: ${escapeHtml(uploadFile.name)}`
+                  : `Preview aktif: <a class="table-link" href="${escapeAttr(videoPlayerUrl(resolveBackendAssetUrl(form.video_url), { title: "Preview Video Latihan", subtitle: "Video yang sedang diedit", view: "admin-videos" }))}" target="_blank" rel="noreferrer">Buka video</a>`
+              }</div>`
+            : `<div class="notice">Pilih salah satu sumber: URL http(s)/path server, atau upload file maksimal 500 MB. File upload disimpan backend sebagai path publik <strong>/storage/...</strong>.</div>`
         }
         <div class="form-actions">
           <button class="btn primary" type="submit">${editing ? "Update" : "Pasang"}</button>
@@ -2264,6 +2261,54 @@ function renderAdminVideos() {
   `;
 }
 
+function renderAdminAthleteVideos() {
+  if (state.userRole !== "admin") {
+    return `<div class="empty">Akses halaman ini hanya untuk admin.</div>`;
+  }
+
+  const videos = filteredAdminAthleteVideos();
+
+  return `
+    ${renderTopbar("Video Atlet", "Akses dan hapus rekaman latihan yang di-upload atlet.", [
+      renderRefreshButton(),
+    ])}
+    <section class="card pad">
+      <div class="search-row">
+        <input class="input search-input" id="admin-athlete-video-search" placeholder="Cari atlet, email, day, status, atau URL" value="${escapeAttr(state.adminAthleteVideoSearch)}" />
+        <select class="select role-filter" id="admin-athlete-video-status-filter">
+          <option value="all" ${state.adminAthleteVideoStatusFilter === "all" ? "selected" : ""}>Semua Status</option>
+          <option value="pending" ${state.adminAthleteVideoStatusFilter === "pending" ? "selected" : ""}>Pending</option>
+          <option value="approved" ${state.adminAthleteVideoStatusFilter === "approved" ? "selected" : ""}>Approved</option>
+          <option value="needs_revision" ${state.adminAthleteVideoStatusFilter === "needs_revision" ? "selected" : ""}>Perlu Ulang</option>
+          <option value="rejected" ${state.adminAthleteVideoStatusFilter === "rejected" ? "selected" : ""}>Rejected</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Atlet</th>
+              <th>Workout</th>
+              <th>Status</th>
+              <th>Upload</th>
+              <th>Durasi</th>
+              <th>Ukuran</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              videos.length
+                ? videos.map(renderAdminAthleteVideoRow).join("")
+                : `<tr><td colspan="7"><div class="empty">Belum ada video atlet untuk filter ini.</div></td></tr>`
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
 function renderSettings() {
   return `
     ${renderTopbar("Pengaturan API", "Atur koneksi backend coach/admin.", [])}
@@ -2276,11 +2321,9 @@ function renderSettings() {
         <div class="form-actions">
           <button class="btn primary" id="save-api-button" type="button">Simpan API</button>
           <button class="btn ghost" id="fetch-api-button" type="button">Coba Fetch API</button>
-          <button class="btn ghost" id="demo-mode-button" type="button">Mode Demo</button>
-          <button class="btn danger" id="reset-demo-button" type="button">Reset Demo</button>
         </div>
         <div class="notice">
-          Web coach tersambung ke endpoint aplikasi: /coach/dashboard, /coach/athletes, /coach/recordings, dan /coach/recordings/{id}/review.
+          Web coach/admin tersambung ke endpoint aplikasi: /coach/dashboard, /coach/athletes, /coach/recordings, /admin/users, /admin/programs, /admin/videos, dan /admin/athlete-videos.
         </div>
       </div>
     </section>
@@ -2336,6 +2379,56 @@ function renderKpi(label, value, note) {
   `;
 }
 
+function renderAdminUserSummaryItem(user) {
+  return `
+    <article class="list-item">
+      <div class="list-item-row">
+        <div>
+          <div class="strong">${escapeHtml(user.name || "-")}</div>
+          <div class="muted small">${escapeHtml(user.email || "-")}</div>
+        </div>
+        ${rolePill(user.role)}
+      </div>
+    </article>
+  `;
+}
+
+function renderProgramCoverageItem(program) {
+  const percentage = program.exercise_count
+    ? Math.round((program.video_count / program.exercise_count) * 100)
+    : 0;
+
+  return `
+    <article class="list-item">
+      <div class="list-item-row">
+        <div>
+          <div class="strong">Day ${escapeHtml(program.day_number || "-")} · ${escapeHtml(program.workout_title || program.program_title || "Program")}</div>
+          <div class="muted small">${escapeHtml(program.video_count)} dari ${escapeHtml(program.exercise_count)} exercise memiliki video</div>
+        </div>
+        <span class="pill ${percentage === 100 ? "success" : "warning"}">${escapeHtml(percentage)}%</span>
+      </div>
+    </article>
+  `;
+}
+
+function renderCoachReviewHistoryRow(recording) {
+  return `
+    <tr>
+      <td>
+        <div class="name-cell">
+          <span class="strong">${escapeHtml(recording.workout_title || `Day ${recording.day_number || "-"}`)}</span>
+          <span class="muted small">${escapeHtml(recording.workout_level || recording.athlete_training_level || "-")}</span>
+        </div>
+      </td>
+      <td>${statusPill(recording.status)}</td>
+      <td>${recording.score === null || recording.score === undefined ? "-" : `${escapeHtml(recording.score)}%`}</td>
+      <td class="feedback-cell">${escapeHtml(recording.feedback || "-")}</td>
+      <td>${formatDateTime(recording.reviewed_at)}</td>
+      <td><button class="btn ghost" data-review-id="${escapeAttr(recording.id)}" type="button">Lihat/Edit</button></td>
+    </tr>
+  `;
+}
+
 function renderAthleteRow(athlete) {
   return `
     <tr>
@@ -2346,7 +2439,7 @@ function renderAthleteRow(athlete) {
         </div>
       </td>
       <td>${escapeHtml(athlete.training_level || "-")}</td>
-      <td>${renderProgress(athlete.consistency_progress || 0, "Consistency")}</td>
+      <td>${renderProgress(athlete.consistency_progress || 0, `${athlete.completed_days || 0}/${athlete.total_program_days || 0} workout`)}</td>
       <td>${renderProgress(athlete.performance_progress || 0, "Performance", true)}</td>
       <td>${renderPendingPill(athlete.pending_reviews || 0)}</td>
       <td>${formatDateTime(athlete.last_activity_at)}</td>
@@ -2572,11 +2665,56 @@ function renderAdminVideoExerciseRow(video) {
         </div>
       </td>
       <td>${escapeHtml(video.sets || 1)} sets / ${escapeHtml(work)} / ${escapeHtml(video.rest_seconds || 0)}s rest</td>
-      <td>${videoUrl ? `<a class="table-link" href="${escapeAttr(playerUrl)}" target="_blank" rel="noreferrer">Buka</a>` : `<span class="muted small">Belum ada</span>`}</td>
+      <td>${
+        videoUrl
+          ? `<div class="name-cell"><a class="table-link" href="${escapeAttr(playerUrl)}" target="_blank" rel="noreferrer">Buka</a><span class="muted small">${escapeHtml(videoSourceLabel(video.video_url || video.file_url))}</span></div>`
+          : `<span class="muted small">Belum ada</span>`
+      }</td>
       <td>
         <div class="row-actions">
           <button class="btn ghost" data-video-edit="${escapeAttr(id)}" type="button">Edit</button>
           <button class="btn danger" data-video-delete="${escapeAttr(id)}" type="button" ${videoUrl ? "" : "disabled"}>Hapus</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function renderAdminAthleteVideoRow(recording) {
+  const videoUrl = resolveBackendAssetUrl(recording.video_url || recording.file_url || "");
+  const playerUrl = videoPlayerUrl(videoUrl, {
+    title: `Video ${recording.athlete_name || "Atlet"}`,
+    subtitle: `Day ${recording.day_number || "-"} - ${recording.workout_title || "Workout"}`,
+    view: "admin-athlete-videos",
+    mime: recording.mime_type || "video/webm",
+  });
+
+  return `
+    <tr>
+      <td>
+        <div class="name-cell">
+          <span class="strong">${escapeHtml(recording.athlete_name || "-")}</span>
+          <span class="muted small">${escapeHtml(recording.athlete_email || `ID ${recording.user_id || "-"}`)}</span>
+        </div>
+      </td>
+      <td>
+        <div class="name-cell">
+          <span class="strong">Day ${escapeHtml(recording.day_number || "-")}</span>
+          <span class="muted small">${escapeHtml(recording.workout_title || "Workout")}</span>
+        </div>
+      </td>
+      <td>${statusPill(recording.status)}</td>
+      <td>${formatDateTime(recording.uploaded_at)}</td>
+      <td>${formatDuration(recording.duration_seconds)}</td>
+      <td>${formatFileSize(recording.file_size)}</td>
+      <td>
+        <div class="row-actions">
+          ${
+            videoUrl
+              ? `<a class="btn primary" href="${escapeAttr(playerUrl)}" target="_blank" rel="noreferrer">Buka</a>`
+              : `<button class="btn primary" type="button" disabled>Buka</button>`
+          }
+          <button class="btn danger" data-athlete-video-delete="${escapeAttr(recording.id)}" type="button">Hapus</button>
         </div>
       </td>
     </tr>
@@ -2589,10 +2727,10 @@ function renderRecordingRow(recording) {
       <td>
         <div class="name-cell">
           <span class="strong">${escapeHtml(recording.athlete_name || "-")}</span>
-          <span class="muted small">ID ${escapeHtml(recording.user_id || "-")}</span>
+          <span class="muted small">${escapeHtml(recording.athlete_email || `ID ${recording.user_id || "-"}`)}</span>
         </div>
       </td>
-      <td>Day ${escapeHtml(recording.day_number || "-")}</td>
+      <td><div class="name-cell"><span class="strong">${escapeHtml(recording.workout_title || `Day ${recording.day_number || "-"}`)}</span><span class="muted small">${escapeHtml(recording.workout_level || recording.athlete_training_level || "-")}</span></div></td>
       <td>${statusPill(recording.status)}</td>
       <td>${recording.score ? `${escapeHtml(recording.score)}%` : "-"}</td>
       <td>${formatDateTime(recording.uploaded_at)}</td>
@@ -2608,7 +2746,7 @@ function renderRecordingItem(recording) {
       <div class="list-item-row">
         <div>
           <div class="strong">${escapeHtml(recording.athlete_name || "-")}</div>
-          <div class="muted small">Day ${escapeHtml(recording.day_number || "-")} - ${formatDateTime(recording.uploaded_at)}</div>
+          <div class="muted small">${escapeHtml(recording.workout_title || `Day ${recording.day_number || "-"}`)} · ${escapeHtml(recording.workout_level || recording.athlete_training_level || "-")} · ${formatDateTime(recording.uploaded_at)}</div>
         </div>
         ${statusPill(recording.status)}
       </div>
@@ -2635,6 +2773,34 @@ function renderAttentionItem(athlete) {
   `;
 }
 
+function renderRankingItem(athlete) {
+  const reviewLabel =
+    Number(athlete.coach_review_count || 0) > 0
+      ? `${athlete.coach_review_count} review coach`
+      : "Belum ada review coach";
+
+  return `
+    <article class="list-item ranking-item">
+      <div class="list-item-row">
+        <div class="ranking-profile">
+          <span class="rank-badge">#${escapeHtml(athlete.rank || "-")}</span>
+          <div>
+            <div class="strong">${escapeHtml(athlete.name || "-")}</div>
+            <div class="muted small">${escapeHtml(athlete.training_level || "-")} · ${escapeHtml(reviewLabel)}</div>
+          </div>
+        </div>
+        <span class="pill success">${escapeHtml(athlete.ranking_score || 0)}%</span>
+      </div>
+      <div class="ranking-metrics">
+        <span>Consistency ${escapeHtml(athlete.consistency_progress || 0)}%</span>
+        <span>Review coach ${escapeHtml(athlete.coach_score || 0)}%</span>
+        <span>${escapeHtml(athlete.completed_days || 0)}/${escapeHtml(athlete.total_program_days || 0)} hari</span>
+      </div>
+      <button class="btn ghost" data-athlete-id="${escapeAttr(athlete.id)}" type="button">Detail Atlet</button>
+    </article>
+  `;
+}
+
 function renderDayTile(day) {
   const score =
     day.score === null || day.score === undefined
@@ -2650,6 +2816,7 @@ function renderDayTile(day) {
         ${score}
       </div>
       ${statusPill(day.status)}
+      <span class="strong small">${escapeHtml(day.workoutTitle || `Day ${day.dayNumber}`)}</span>
       <span class="muted small">${escapeHtml(day.label)}</span>
       ${countLabel}
   `;
@@ -2756,7 +2923,7 @@ function renderReviewDrawer() {
           <form id="review-form" class="review-form">
             <div class="field">
               <label for="review-status">Validasi</label>
-              <select class="select" id="review-status" name="status">
+              <select class="select" id="review-status" name="status" required>
                 <option value="approved" ${state.reviewDraft.status === "approved" ? "selected" : ""}>Approved</option>
                 <option value="needs_revision" ${state.reviewDraft.status === "needs_revision" ? "selected" : ""}>Perlu Ulang</option>
               </select>
@@ -2767,7 +2934,7 @@ function renderReviewDrawer() {
             </div>
             <div class="field full">
               <label for="review-feedback">Catatan Coach</label>
-              <textarea class="textarea" id="review-feedback" name="feedback" placeholder="Contoh: landing sudah stabil, tapi start sprint perlu lebih eksplosif.">${escapeHtml(state.reviewDraft.feedback)}</textarea>
+              <textarea class="textarea" id="review-feedback" name="feedback" maxlength="2000" required placeholder="Wajib diisi. Contoh: landing sudah stabil, tapi start sprint perlu lebih eksplosif.">${escapeHtml(state.reviewDraft.feedback)}</textarea>
             </div>
             <div class="form-actions full">
               <button class="btn success" type="submit">Simpan Review</button>
@@ -2788,10 +2955,10 @@ function bindShellEvents() {
   document.querySelector("#logout-button")?.addEventListener("click", logout);
   document
     .querySelector("#refresh-button")
-    ?.addEventListener("click", () => loadCoachData({ forceApi: !state.demoMode }));
+    ?.addEventListener("click", () => loadCoachData());
   document
     .querySelector("#fetch-api-button")
-    ?.addEventListener("click", () => loadCoachData({ forceApi: true }));
+    ?.addEventListener("click", () => loadCoachData());
   document.querySelectorAll("[data-athlete-id]").forEach((button) => {
     button.addEventListener("click", () => selectAthlete(button.dataset.athleteId));
   });
@@ -2827,6 +2994,11 @@ function bindShellEvents() {
   document.querySelectorAll("[data-video-delete]").forEach((button) => {
     button.addEventListener("click", () => deleteAdminVideo(button.dataset.videoDelete));
   });
+  document.querySelectorAll("[data-athlete-video-delete]").forEach((button) => {
+    button.addEventListener("click", () =>
+      deleteAdminAthleteVideo(button.dataset.athleteVideoDelete),
+    );
+  });
   document.querySelectorAll("[data-video-program-detail]").forEach((button) => {
     button.addEventListener("click", () =>
       selectAdminVideoProgram(button.dataset.videoProgramDetail),
@@ -2835,6 +3007,10 @@ function bindShellEvents() {
 
   document.querySelector("#athlete-search")?.addEventListener("input", (event) => {
     state.search = event.target.value;
+    render();
+  });
+  document.querySelector("#recording-search")?.addEventListener("input", (event) => {
+    state.recordingSearch = event.target.value;
     render();
   });
   document.querySelector("#admin-user-search")?.addEventListener("input", (event) => {
@@ -2853,6 +3029,18 @@ function bindShellEvents() {
     state.adminVideoSearch = event.target.value;
     render();
   });
+  document
+    .querySelector("#admin-athlete-video-search")
+    ?.addEventListener("input", (event) => {
+      state.adminAthleteVideoSearch = event.target.value;
+      render();
+    });
+  document
+    .querySelector("#admin-athlete-video-status-filter")
+    ?.addEventListener("change", (event) => {
+      state.adminAthleteVideoStatusFilter = event.target.value;
+      render();
+    });
   document.querySelector("#admin-user-form")?.addEventListener("submit", submitAdminUser);
   document.querySelector("#admin-cancel-edit")?.addEventListener("click", resetAdminUserForm);
   document.querySelector("#admin-program-form")?.addEventListener("submit", submitAdminProgram);
@@ -2867,6 +3055,30 @@ function bindShellEvents() {
     ?.addEventListener("click", resetProgramExerciseForm);
   document.querySelector("#admin-video-form")?.addEventListener("submit", submitAdminVideo);
   document.querySelector("#video-cancel-edit")?.addEventListener("click", resetAdminVideoForm);
+  document.querySelector("#admin-video-file")?.addEventListener("change", (event) => {
+    setAdminVideoUploadFile(event.target.files?.[0] || null);
+  });
+
+  const videoDropzone = document.querySelector("[data-video-dropzone]");
+  if (videoDropzone) {
+    ["dragenter", "dragover"].forEach((eventName) => {
+      videoDropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        videoDropzone.classList.add("dragging");
+      });
+    });
+    ["dragleave", "dragend"].forEach((eventName) => {
+      videoDropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        videoDropzone.classList.remove("dragging");
+      });
+    });
+    videoDropzone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      videoDropzone.classList.remove("dragging");
+      setAdminVideoUploadFile(event.dataTransfer?.files?.[0] || null);
+    });
+  }
 
   document.querySelector("#back-athletes")?.addEventListener("click", () => {
     state.selectedAthleteId = null;
@@ -2880,14 +3092,6 @@ function bindShellEvents() {
     render();
   });
 
-  document.querySelector("#demo-mode-button")?.addEventListener("click", () => {
-    state.demoMode = true;
-    localStorage.setItem("coach_demo_mode", "true");
-    loadCoachData();
-  });
-  document
-    .querySelector("#reset-demo-button")
-    ?.addEventListener("click", resetDemoSnapshot);
   document
     .querySelector("#recording-status-filter")
     ?.addEventListener("change", (event) => {
@@ -2921,7 +3125,10 @@ function bindVideoPlayerEvents() {
       return;
     }
 
-    window.location.href = webAppUrl(state.userRole === "admin" ? "admin-videos" : "recordings");
+    const player = currentPlayerRoute();
+    window.location.href = webAppUrl(
+      player?.view || (state.userRole === "admin" ? "admin-videos" : "recordings"),
+    );
   });
 }
 
@@ -2945,16 +3152,46 @@ function formatDuration(value) {
   return minutes > 0 ? `${minutes}m ${rest}s` : `${rest}s`;
 }
 
+function formatFileSize(value) {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes <= 0) return "-";
+
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
 function stringOrNull(value) {
   const text = String(value ?? "").trim();
   return text === "" ? null : text;
 }
 
 function isViewAllowedForRole(view, role) {
-  const adminViews = ["admin-users", "admin-programs", "admin-videos", "settings"];
-  const coachViews = ["dashboard", "athletes", "recordings", "settings"];
+  const adminViews = [
+    "dashboard",
+    "admin-users",
+    "admin-programs",
+    "admin-videos",
+    "admin-athlete-videos",
+    "settings",
+  ];
+  const coachViews = ["dashboard", "athletes", "recordings", "rank", "settings"];
 
   return role === "admin" ? adminViews.includes(view) : coachViews.includes(view);
+}
+
+function videoSourceLabel(value) {
+  const source = String(value || "").trim();
+  if (!source) return "Belum ada sumber";
+  if (source.startsWith("/storage/") || source.includes("/storage/")) {
+    return "File upload · disimpan sebagai path /storage";
+  }
+  if (source.startsWith("/videos/") || source.includes("/videos/")) {
+    return "File server · path /videos";
+  }
+  return "URL eksternal";
 }
 
 function webAppUrl(view) {
@@ -2980,6 +3217,7 @@ function videoPlayerUrl(source, options = {}) {
   if (options.title) url.searchParams.set("title", options.title);
   if (options.subtitle) url.searchParams.set("subtitle", options.subtitle);
   if (options.view) url.searchParams.set("view", options.view);
+  if (options.mime) url.searchParams.set("mime", options.mime);
 
   return url.toString();
 }
@@ -3041,10 +3279,6 @@ function resolveBackendAssetUrl(value) {
 
   const path = raw.startsWith("/") ? raw : `/${raw}`;
   return `${origin}${path}`;
-}
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function escapeHtml(value) {

@@ -726,7 +726,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
             "EXERCISING",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
             ),
@@ -756,27 +756,48 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     }
 
     return SafeArea(
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-              children: [
-                _buildExerciseTitle(exercise),
-                const SizedBox(height: 18),
-                _buildPracticePanels(exercise),
-                const SizedBox(height: 18),
-                _buildSetStatusBlock(exercise),
-                const SizedBox(height: 18),
-                _buildTransportControls(),
-                const SizedBox(height: 14),
-                _buildNextStepLabel(),
-                const SizedBox(height: 18),
-                _buildInfoPanel(exercise),
-              ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 430;
+          final dense = compact && constraints.maxHeight < 740;
+          final horizontalPadding = compact ? 14.0 : 20.0;
+          final sectionGap = dense
+              ? 8.0
+              : compact
+                  ? 12.0
+                  : 18.0;
+
+          return ListView(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              compact ? 12 : 18,
+              horizontalPadding,
+              compact ? 20 : 18,
             ),
-          ),
-        ],
+            children: [
+              _buildExerciseTitle(compact: compact, dense: dense),
+              SizedBox(height: sectionGap),
+              _buildPracticePanels(exercise, dense: dense),
+              SizedBox(height: sectionGap),
+              _buildSetStatusBlock(
+                exercise,
+                compact: compact,
+                dense: dense,
+              ),
+              SizedBox(height: sectionGap),
+              _buildTransportControls(compact: compact, dense: dense),
+              SizedBox(
+                  height: dense
+                      ? 6
+                      : compact
+                          ? 10
+                          : 14),
+              _buildNextStepLabel(dense: dense),
+              SizedBox(height: sectionGap),
+              _buildInfoPanel(exercise),
+            ],
+          );
+        },
       ),
     );
   }
@@ -904,41 +925,52 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     );
   }
 
-  Widget _buildExerciseTitle(dynamic exercise) {
-    return Column(
+  Widget _buildExerciseTitle({required bool compact, required bool dense}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          _exerciseName(exercise).toUpperCase(),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 27,
-            height: 1.04,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0,
-          ),
+        _MediaBadge(
+          label: "DAY ${widget.dayNumber}",
+          color: AppColors.primary.withValues(alpha: 0.88),
         ),
-        const SizedBox(height: 8),
-        Text(
-          "Day ${widget.dayNumber} - Exercise ${currentIndex + 1} of ${exercises.length}",
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+        SizedBox(width: dense ? 8 : 10),
+        Flexible(
+          child: Text(
+            "Exercise ${currentIndex + 1} of ${exercises.length}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: dense
+                  ? 11
+                  : compact
+                      ? 12
+                      : 13,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPracticePanels(dynamic exercise) {
+  Widget _buildPracticePanels(dynamic exercise, {required bool dense}) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 760;
+        final compactPhone = constraints.maxWidth < 430;
+        final tutorialHeight = compactPhone
+            ? dense
+                ? (constraints.maxWidth * 0.36).clamp(112.0, 128.0)
+                : (constraints.maxWidth * 0.46).clamp(148.0, 168.0)
+            : 240.0;
+        final recorderHeight = compactPhone
+            ? dense
+                ? (constraints.maxWidth * 0.52).clamp(168.0, 188.0)
+                : (constraints.maxWidth * 0.58).clamp(188.0, 210.0)
+            : 240.0;
         final tutorial = _buildMediaPanel(exercise);
-        final recorder = _buildRecordingPanel();
+        final recorder = _buildRecordingPanel(dense: dense);
 
         if (wide) {
           return SizedBox(
@@ -955,9 +987,14 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
 
         return Column(
           children: [
-            SizedBox(height: 240, child: tutorial),
-            const SizedBox(height: 14),
-            SizedBox(height: 240, child: recorder),
+            SizedBox(height: tutorialHeight, child: tutorial),
+            SizedBox(
+                height: dense
+                    ? 8
+                    : compactPhone
+                        ? 10
+                        : 14),
+            SizedBox(height: recorderHeight, child: recorder),
           ],
         );
       },
@@ -1033,7 +1070,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     );
   }
 
-  Widget _buildRecordingPanel() {
+  Widget _buildRecordingPanel({required bool dense}) {
     final ready = recordingController.isRecording;
     final busy = recordingController.isInitializing ||
         recordingController.isStopping ||
@@ -1054,8 +1091,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
         children: [
           Positioned.fill(child: recordingController.buildPreview()),
           Positioned(
-            left: 12,
-            top: 12,
+            left: dense ? 8 : 12,
+            top: dense ? 8 : 12,
             child: _MediaBadge(
               label: "USER RECORD",
               color: ready
@@ -1064,8 +1101,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
             ),
           ),
           Positioned(
-            right: 12,
-            top: 12,
+            right: dense ? 8 : 12,
+            top: dense ? 8 : 12,
             child: _MediaBadge(
               label: ready
                   ? _formatDuration(recordingController.elapsedSeconds)
@@ -1081,7 +1118,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                 ),
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(18),
+                    padding: EdgeInsets.all(dense ? 10 : 18),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1090,21 +1127,21 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                               ? Icons.hourglass_top_rounded
                               : Icons.videocam_outlined,
                           color: Colors.white,
-                          size: 42,
+                          size: dense ? 30 : 42,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: dense ? 6 : 12),
                         Text(
                           statusLabel,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: dense ? 13 : 16,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0,
                           ),
                         ),
                         if (recordingController.errorMessage != null) ...[
-                          const SizedBox(height: 8),
+                          SizedBox(height: dense ? 4 : 8),
                           Text(
                             recordingController.errorMessage!,
                             maxLines: 2,
@@ -1118,9 +1155,9 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 14),
+                        SizedBox(height: dense ? 8 : 14),
                         SizedBox(
-                          height: 42,
+                          height: dense ? 36 : 42,
                           child: OutlinedButton.icon(
                             onPressed: busy || isSaving
                                 ? null
@@ -1286,7 +1323,11 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     );
   }
 
-  Widget _buildSetStatusBlock(dynamic exercise) {
+  Widget _buildSetStatusBlock(
+    dynamic exercise, {
+    required bool compact,
+    required bool dense,
+  }) {
     return Column(
       children: [
         Text(
@@ -1294,21 +1335,30 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 34,
+            fontSize: dense
+                ? 24
+                : compact
+                    ? 27
+                    : 34,
             height: 1,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 16),
-        const Text(
+        SizedBox(
+            height: dense
+                ? 6
+                : compact
+                    ? 10
+                    : 16),
+        Text(
           "set",
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white70,
-            fontSize: 15,
+            fontSize: dense ? 13 : 15,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
           ),
@@ -1316,21 +1366,25 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
         Text(
           currentSetNumber.toString(),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.lavender,
-            fontSize: 64,
+            fontSize: dense
+                ? 44
+                : compact
+                    ? 52
+                    : 64,
             height: 0.92,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: dense ? 4 : 8),
         Text(
           "of ${_sets(exercise)} - ${_workValue(exercise)} ${_workLabel(exercise).toLowerCase()}",
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white70,
-            fontSize: 14,
+            fontSize: dense ? 12 : 14,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1338,7 +1392,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     );
   }
 
-  Widget _buildTransportControls() {
+  Widget _buildTransportControls({required bool compact, required bool dense}) {
     final canSubmit = _canSubmitExerciseResult;
 
     return Row(
@@ -1348,41 +1402,67 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
           tooltip: "Previous set",
           caption: "PREV SET",
           icon: Icons.skip_previous_rounded,
-          size: 56,
+          size: dense
+              ? 46
+              : compact
+                  ? 50
+                  : 56,
           onPressed: isSaving ? null : _goPreviousStep,
         ),
-        const SizedBox(width: 18),
+        SizedBox(
+            width: dense
+                ? 10
+                : compact
+                    ? 12
+                    : 18),
         _RoundControlButton(
           tooltip: isVideoPlaying ? "Pause" : "Play",
           icon: isVideoPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-          size: 82,
+          size: dense
+              ? 62
+              : compact
+                  ? 70
+                  : 82,
           backgroundColor: AppColors.primary,
           iconColor: Colors.white,
-          iconSize: 50,
+          iconSize: dense
+              ? 36
+              : compact
+                  ? 42
+                  : 50,
           onPressed:
               isSaving || _videoController == null ? null : _togglePlayback,
         ),
-        const SizedBox(width: 18),
+        SizedBox(
+            width: dense
+                ? 10
+                : compact
+                    ? 12
+                    : 18),
         _RoundControlButton(
           tooltip: _nextButtonTooltip(),
           caption: _nextButtonCaption(),
           icon: Icons.skip_next_rounded,
-          size: 56,
+          size: dense
+              ? 46
+              : compact
+                  ? 50
+                  : 56,
           onPressed: canSubmit ? _completeCurrentSetFromNextButton : null,
         ),
       ],
     );
   }
 
-  Widget _buildNextStepLabel() {
+  Widget _buildNextStepLabel({required bool dense}) {
     return Text(
       _nextStepText(),
       textAlign: TextAlign.center,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
+      style: TextStyle(
         color: Colors.white70,
-        fontSize: 16,
+        fontSize: dense ? 13 : 16,
         fontWeight: FontWeight.w800,
       ),
     );

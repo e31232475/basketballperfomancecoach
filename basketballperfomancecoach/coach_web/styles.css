@@ -318,6 +318,13 @@ td {
   font-size: 14px;
 }
 
+.feedback-cell {
+  min-width: 260px;
+  max-width: 460px;
+  white-space: normal;
+  line-height: 1.55;
+}
+
 tr:hover td {
   background: rgba(255, 255, 255, 0.025);
 }
@@ -486,6 +493,37 @@ tr:hover td {
   gap: 10px;
 }
 
+.upload-dropzone {
+  display: grid;
+  min-height: 126px;
+  place-items: center;
+  gap: 6px;
+  padding: 18px;
+  border: 1px dashed #4a5872;
+  border-radius: 8px;
+  color: var(--text);
+  background: #0d1421;
+  text-align: center;
+  cursor: pointer;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone.dragging {
+  border-color: var(--secondary);
+  background: rgba(18, 231, 255, 0.07);
+}
+
+.upload-dropzone-title {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.upload-dropzone-note {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .row-actions {
   display: flex;
   gap: 8px;
@@ -526,6 +564,45 @@ tr:hover td {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.ranking-note {
+  margin: -4px 0 12px;
+}
+
+.ranking-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: #06111f;
+  background: linear-gradient(135deg, var(--secondary), var(--accent));
+  font-weight: 1000;
+}
+
+.ranking-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ranking-metrics span {
+  padding: 6px 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .workout-days {

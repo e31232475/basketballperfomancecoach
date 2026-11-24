@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../core/config/api_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/bottom_navbar.dart';
@@ -23,8 +27,12 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
   final heightController = TextEditingController();
   final weightController = TextEditingController();
   final ageController = TextEditingController();
+  final imagePicker = ImagePicker();
 
-  String selectedLevel = "Beginner";
+  String selectedGender = "male";
+  String? currentProfilePhotoUrl;
+  Uint8List? selectedPhotoBytes;
+  String? selectedPhotoName;
   bool isSaving = false;
 
   @override
@@ -37,7 +45,9 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       heightController.text = data["height"]?.toString() ?? "";
       weightController.text = data["weight"]?.toString() ?? "";
       ageController.text = data["age"]?.toString() ?? "";
-      selectedLevel = _normalizeLevel(data["training_level"]) ?? "Beginner";
+      selectedGender =
+          data["gender"]?.toString() == "female" ? "female" : "male";
+      currentProfilePhotoUrl = data["profile_photo_url"]?.toString();
     }
   }
 
@@ -48,6 +58,38 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
     weightController.dispose();
     ageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    try {
+      final picked = await imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 85,
+      );
+
+      if (picked == null || !mounted) {
+        return;
+      }
+
+      final bytes = await picked.readAsBytes();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        selectedPhotoBytes = bytes;
+        selectedPhotoName =
+            picked.name.isEmpty ? "profile-photo.jpg" : picked.name;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      _showMessage("Foto belum bisa dipilih");
+    }
   }
 
   Future<void> _save() async {
@@ -70,7 +112,9 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
       height: height,
       weight: weight,
       age: age,
-      trainingLevel: selectedLevel,
+      gender: selectedGender,
+      profilePhotoBytes: selectedPhotoBytes,
+      profilePhotoFileName: selectedPhotoName,
     );
 
     if (!mounted) {
@@ -133,6 +177,8 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                 icon: Icons.person_outline,
               ),
               const SizedBox(height: 16),
+              _buildPhotoPicker(),
+              const SizedBox(height: 16),
               _buildInput(
                 controller: heightController,
                 label: "Height",
@@ -159,29 +205,8 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
                 keyboardType: TextInputType.number,
                 suffixText: "years",
               ),
-              const SizedBox(height: 26),
-              const Text(
-                "ABILITY LEVEL",
-                style: TextStyle(
-                  color: AppColors.lavender,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildLevelCard(
-                title: "Beginner",
-                subtitle: "Recommended for foundation, control, and basics.",
-                icon: Icons.flag_outlined,
-              ),
-              const SizedBox(height: 12),
-              _buildLevelCard(
-                title: "Intermediate",
-                subtitle:
-                    "Recommended for stronger intensity and progressions.",
-                icon: Icons.bolt_outlined,
-              ),
+              const SizedBox(height: 16),
+              _buildGenderSelector(),
               const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
@@ -264,7 +289,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            "Personalize Your Training",
+            "Personalize Your Profile",
             style: TextStyle(
               color: Colors.white,
               fontSize: 30,
@@ -275,7 +300,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            "Your selected level keeps the Workout menu focused, while other levels stay available as previews on Home.",
+            "Lengkapi data profil atlet. Akses level hanya dapat diberikan oleh coach dari web coach.",
             style: TextStyle(
               color: Colors.white70,
               fontSize: 15,
@@ -284,6 +309,171 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPhotoPicker() {
+    final currentUrl = currentProfilePhotoUrl?.trim();
+    final hasCurrentPhoto = currentUrl != null && currentUrl.isNotEmpty;
+    ImageProvider? photoProvider;
+
+    if (selectedPhotoBytes != null) {
+      photoProvider = MemoryImage(selectedPhotoBytes!);
+    } else if (hasCurrentPhoto) {
+      photoProvider =
+          NetworkImage(ApiConfig.normalizeBackendAssetUrl(currentUrl));
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          _buildPhotoPreview(
+            photoBytes: selectedPhotoBytes,
+            photoUrl: hasCurrentPhoto
+                ? ApiConfig.normalizeBackendAssetUrl(currentUrl)
+                : null,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "FOTO PROFIL",
+                  style: TextStyle(
+                    color: AppColors.lavender,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  selectedPhotoBytes != null
+                      ? "Foto baru siap disimpan"
+                      : hasCurrentPhoto
+                          ? "Foto profil sudah tersimpan"
+                          : "Belum ada foto profil",
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: isSaving ? null : _pickPhoto,
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: Text(
+                    photoProvider == null
+                        ? "Tambah foto profil"
+                        : "Ganti foto profil",
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoPreview({
+    Uint8List? photoBytes,
+    String? photoUrl,
+  }) {
+    return Container(
+      width: 84,
+      height: 84,
+      decoration: BoxDecoration(
+        color: AppColors.panelSoft,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const Center(
+            child: Icon(
+              Icons.person,
+              size: 42,
+              color: AppColors.primary,
+            ),
+          ),
+          if (photoBytes != null)
+            Image.memory(
+              photoBytes,
+              fit: BoxFit.cover,
+            )
+          else if (photoUrl != null)
+            Image.network(
+              photoUrl,
+              fit: BoxFit.cover,
+              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenderSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "JENIS KELAMIN",
+          style: TextStyle(
+            color: AppColors.lavender,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: selectedGender,
+          dropdownColor: AppColors.card,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
+          decoration: const InputDecoration(
+            prefixIcon: Icon(
+              Icons.wc_outlined,
+              color: AppColors.secondary,
+            ),
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: "male",
+              child: Text("Laki-laki"),
+            ),
+            DropdownMenuItem(
+              value: "female",
+              child: Text("Perempuan"),
+            ),
+          ],
+          onChanged: isSaving
+              ? null
+              : (value) {
+                  if (value == null) {
+                    return;
+                  }
+
+                  setState(() {
+                    selectedGender = value;
+                  });
+                },
+        ),
+      ],
     );
   }
 
@@ -327,93 +517,6 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> {
         ),
       ],
     );
-  }
-
-  Widget _buildLevelCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    final selected = selectedLevel == title;
-    final accent = selected ? AppColors.primary : Colors.white24;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          selectedLevel = title;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.panelSoft : AppColors.card,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: accent),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: selected ? 0.16 : 0.08),
-                shape: BoxShape.circle,
-                border: Border.all(color: accent),
-              ),
-              child: Icon(
-                icon,
-                color: selected ? AppColors.primary : Colors.white54,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: selected ? AppColors.primary : Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              selected ? Icons.check_circle : Icons.circle_outlined,
-              color: selected ? AppColors.primary : Colors.white30,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String? _normalizeLevel(dynamic value) {
-    final text = value?.toString().toLowerCase();
-
-    if (text == "intermediate") {
-      return "Intermediate";
-    }
-
-    if (text == "beginner") {
-      return "Beginner";
-    }
-
-    return null;
   }
 
   void _showMessage(String message) {

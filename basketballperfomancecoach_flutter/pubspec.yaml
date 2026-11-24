@@ -1,4 +1,4 @@
-name: basketballperfomancecoach_flutter
+﻿name: basketballperfomancecoach_flutter
 
 description: A new Flutter project.
 
@@ -23,6 +23,7 @@ dependencies:
   camera: 0.11.2+1
   
 
+  image_picker: ^1.2.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -32,5 +33,3 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-
-  

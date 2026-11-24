@@ -295,6 +295,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 390;
+
     return Scaffold(
       backgroundColor: _background,
       appBar: AppBar(
@@ -305,11 +307,11 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           "BPC ELITE",
           style: TextStyle(
             color: _lavender,
-            fontSize: 34,
+            fontSize: compact ? 25 : 30,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
             shadows: [
@@ -344,6 +346,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
   Widget _buildTrackerBody() {
     final exercise = _currentExercise;
+    final compact = MediaQuery.sizeOf(context).width < 390;
 
     if (workoutData == null || exercise == null) {
       return const Center(
@@ -358,16 +361,21 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
       color: _orange,
       onRefresh: _loadWorkout,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 112),
+        padding: EdgeInsets.fromLTRB(
+          compact ? 14 : 20,
+          compact ? 12 : 18,
+          compact ? 14 : 20,
+          112,
+        ),
         children: [
           _buildWorkoutSummary(exercise),
-          const SizedBox(height: 18),
+          SizedBox(height: compact ? 12 : 18),
           _buildPreviewCard(exercise),
-          const SizedBox(height: 28),
+          SizedBox(height: compact ? 20 : 28),
           _buildExerciseIntro(exercise),
-          const SizedBox(height: 24),
+          SizedBox(height: compact ? 18 : 24),
           _buildMetricRow(exercise),
-          const SizedBox(height: 36),
+          SizedBox(height: compact ? 26 : 36),
           _buildSetsHeader(exercise),
           const SizedBox(height: 14),
           ...List.generate(
@@ -447,9 +455,10 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
   Widget _buildPreviewCard(dynamic exercise) {
     final videoUrl = _videoUrl(exercise);
+    final compact = MediaQuery.sizeOf(context).width < 390;
 
     return Container(
-      height: 192,
+      height: compact ? 168 : 192,
       decoration: BoxDecoration(
         color: _panel,
         borderRadius: BorderRadius.circular(12),
@@ -494,8 +503,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 84,
-                  height: 84,
+                  width: compact ? 68 : 84,
+                  height: compact ? 68 : 84,
                   decoration: const BoxDecoration(
                     color: _orange,
                     shape: BoxShape.circle,
@@ -503,7 +512,7 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
                   child: Icon(
                     videoUrl == null ? Icons.fitness_center : Icons.play_arrow,
                     color: Colors.white,
-                    size: 46,
+                    size: compact ? 38 : 46,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -597,6 +606,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
   }
 
   Widget _buildExerciseIntro(dynamic exercise) {
+    final compact = MediaQuery.sizeOf(context).width < 390;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -620,9 +631,9 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
         const SizedBox(height: 16),
         Text(
           _exerciseName(exercise),
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 30,
+            fontSize: compact ? 25 : 30,
             height: 1,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,

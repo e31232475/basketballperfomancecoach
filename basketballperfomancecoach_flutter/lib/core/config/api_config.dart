@@ -4,8 +4,10 @@ class ApiConfig {
   static const String _overrideBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
-  static const String _webBaseUrl = 'http://127.0.0.1:8000/api';
-  static const String _androidBaseUrl = 'http://10.0.2.2:8000/api';
+  static const String _webBaseUrl = 'http://127.0.0.1:8001/api';
+  // Default Android ditujukan untuk HP fisik melalui `adb reverse`.
+  // Emulator tetap bisa memakai 10.0.2.2 lewat --dart-define.
+  static const String _androidBaseUrl = 'http://127.0.0.1:8001/api';
 
   static String get baseUrl {
     if (_overrideBaseUrl.trim().isNotEmpty) {

@@ -50,6 +50,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final pagePadding = screenWidth < 390 ? 14.0 : 20.0;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -75,7 +78,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   onRefresh: _loadProgress,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(pagePadding),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -83,17 +86,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         const SizedBox(height: 18),
                         _ConsistencyChartCard(
                           title: "Consistency Progress",
-                          subtitle:
-                              "Berdasarkan aktivitas latihan dan waktu upload.",
+                          subtitle: progress["training_level"] == null
+                              ? "Berdasarkan aktivitas latihan dan waktu upload."
+                              : "Program ${progress["training_level"]} dari database.",
                           value: _toInt(progress["consistency_progress"]),
                           color: AppColors.secondary,
                           chartItems: _consistencyChartItems(),
                           details: [
                             _DetailItem(
                               label: "Completed workouts",
-                              value: _toInt(
-                                progress["completed_workout_total"],
-                              ).toString(),
+                              value:
+                                  "${_toInt(progress["completed_workout_total"])}/${_toInt(progress["total_workouts"])}",
                             ),
                             _DetailItem(
                               label: "Current streak",
@@ -597,65 +600,92 @@ class _ConsistencyChartCard extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 680;
+          final compact = constraints.maxWidth < 430;
+          final veryCompact = constraints.maxWidth < 310;
+          final indicator = Container(
+            width: compact ? 48 : 54,
+            height: compact ? 48 : 54,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.bar_chart_rounded,
+              color: color,
+              size: compact ? 28 : 32,
+            ),
+          );
+          final titleBlock = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: compact ? 19 : 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          );
+          final percentage = Text(
+            "$safeValue%",
+            style: TextStyle(
+              color: color,
+              fontSize: compact ? 32 : 46,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          );
+          final header = compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        indicator,
+                        const SizedBox(width: 12),
+                        Expanded(child: titleBlock),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: percentage,
+                    ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    indicator,
+                    const SizedBox(width: 18),
+                    Expanded(child: titleBlock),
+                    const SizedBox(width: 12),
+                    percentage,
+                  ],
+                );
+          final detailWidth = veryCompact
+              ? constraints.maxWidth
+              : compact
+                  ? (constraints.maxWidth - 10) / 2
+                  : null;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.bar_chart_rounded,
-                      color: color,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    "$safeValue%",
-                    style: TextStyle(
-                      color: color,
-                      fontSize: compact ? 34 : 46,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ],
-              ),
+              header,
               const SizedBox(height: 18),
               _WeeklyConsistencyChart(
                 items: chartItems,
@@ -667,7 +697,12 @@ class _ConsistencyChartCard extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: details
-                    .map((item) => _DetailChip(item: item))
+                    .map(
+                      (item) => SizedBox(
+                        width: detailWidth,
+                        child: _DetailChip(item: item),
+                      ),
+                    )
                     .toList(growable: false),
               ),
             ],
@@ -859,64 +894,92 @@ class _ProgressCard extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 680;
-          final header = Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          final compact = constraints.maxWidth < 430;
+          final veryCompact = constraints.maxWidth < 310;
+          final indicatorSize = compact ? 68.0 : 92.0;
+          final indicator = SizedBox(
+            width: indicatorSize,
+            height: indicatorSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: safeValue / 100,
+                  strokeWidth: 9,
+                  backgroundColor: Colors.white12,
+                  valueColor: AlwaysStoppedAnimation(color),
+                ),
+                Icon(icon, color: color, size: compact ? 28 : 34),
+              ],
+            ),
+          );
+          final titleBlock = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 92,
-                height: 92,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: safeValue / 100,
-                      strokeWidth: 9,
-                      backgroundColor: Colors.white12,
-                      valueColor: AlwaysStoppedAnimation(color),
-                    ),
-                    Icon(icon, color: color, size: 34),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
               Text(
-                "$safeValue%",
+                title,
                 style: TextStyle(
-                  color: color,
-                  fontSize: compact ? 34 : 46,
+                  color: Colors.white,
+                  fontSize: compact ? 20 : 22,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0,
+                  height: 1.08,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.35,
                 ),
               ),
             ],
           );
+          final percentage = Text(
+            "$safeValue%",
+            style: TextStyle(
+              color: color,
+              fontSize: compact ? 34 : 46,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          );
+          final header = compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        indicator,
+                        const SizedBox(width: 14),
+                        Expanded(child: titleBlock),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: percentage,
+                    ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    indicator,
+                    const SizedBox(width: 18),
+                    Expanded(child: titleBlock),
+                    const SizedBox(width: 12),
+                    percentage,
+                  ],
+                );
+          final detailWidth = veryCompact
+              ? constraints.maxWidth
+              : compact
+                  ? (constraints.maxWidth - 10) / 2
+                  : null;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -937,7 +1000,12 @@ class _ProgressCard extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: details
-                    .map((item) => _DetailChip(item: item))
+                    .map(
+                      (item) => SizedBox(
+                        width: detailWidth,
+                        child: _DetailChip(item: item),
+                      ),
+                    )
                     .toList(growable: false),
               ),
             ],
@@ -973,11 +1041,13 @@ class _DetailChip extends StatelessWidget {
         border: Border.all(color: Colors.white10),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             item.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white54,
               fontSize: 11,
@@ -987,6 +1057,8 @@ class _DetailChip extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             item.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,

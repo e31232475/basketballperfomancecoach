@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CoachReview;
 use App\Models\Exercise;
 use App\Models\User;
 use App\Models\Workout;
+use App\Models\WorkoutRecording;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
@@ -536,6 +539,111 @@ class AdminController extends Controller
         ]);
     }
 
+    public function athleteVideos(Request $request)
+    {
+        if ($denied = $this->denyUnlessAdmin($request)) {
+            return $denied;
+        }
+
+        $search = trim((string) $request->query('search', ''));
+        $status = strtolower((string) $request->query('status', 'all'));
+
+        $query = $this->athleteVideoQuery();
+
+        if ($status !== 'all') {
+            if ($status === 'pending') {
+                $query->where(function ($inner) {
+                    $inner->whereNull('coach_reviews.status')
+                        ->orWhere('coach_reviews.status', 'pending');
+                });
+            } else {
+                $query->where('coach_reviews.status', $status);
+            }
+        }
+
+        if ($search !== '') {
+            $query->where(function ($inner) use ($search) {
+                $inner->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%")
+                    ->orWhere('workouts.title', 'like', "%{$search}%")
+                    ->orWhere('workouts.name', 'like', "%{$search}%")
+                    ->orWhere('workout_recordings.file_url', 'like', "%{$search}%")
+                    ->orWhere('workout_recordings.mime_type', 'like', "%{$search}%");
+
+                if (is_numeric($search)) {
+                    $inner->orWhere('workout_recordings.day_number', (int) $search)
+                        ->orWhere('workout_recordings.user_id', (int) $search);
+                }
+            });
+        }
+
+        $videos = $query
+            ->orderByDesc('workout_recordings.created_at')
+            ->get()
+            ->map(fn ($recording) => $this->athleteVideoPayload($recording))
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $videos,
+        ]);
+    }
+
+    public function showAthleteVideo(Request $request, $id)
+    {
+        if ($denied = $this->denyUnlessAdmin($request)) {
+            return $denied;
+        }
+
+        $recording = $this->athleteVideoQuery()
+            ->where('workout_recordings.id', $id)
+            ->first();
+
+        if (! $recording) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Video atlet tidak ditemukan',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->athleteVideoPayload($recording),
+        ]);
+    }
+
+    public function destroyAthleteVideo(Request $request, $id)
+    {
+        if ($denied = $this->denyUnlessAdmin($request)) {
+            return $denied;
+        }
+
+        $recording = WorkoutRecording::find($id);
+
+        if (! $recording) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Video atlet tidak ditemukan',
+            ], 404);
+        }
+
+        $filePath = $recording->file_path;
+
+        DB::transaction(function () use ($recording) {
+            CoachReview::where('workout_recording_id', (int) $recording->id)->delete();
+            $recording->delete();
+        });
+
+        if ($filePath) {
+            Storage::disk('public')->delete($filePath);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Video atlet berhasil dihapus',
+        ]);
+    }
+
     private function validatedUserData(Request $request, bool $creating, ?int $userId = null): array
     {
         $passwordRules = $creating
@@ -588,7 +696,7 @@ class AdminController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:64'],
-            'video_url' => ['nullable', 'string', 'max:2048'],
+            'video_url' => $this->videoSourceRules(),
             'sets' => ['required', 'integer', 'min:1', 'max:20'],
             'reps' => ['required', 'string', 'max:255'],
             'duration' => ['nullable', 'integer', 'min:1', 'max:3600'],
@@ -604,13 +712,70 @@ class AdminController extends Controller
                 'integer',
                 'exists:workout_exercises,id',
             ],
-            'video_url' => ['required', 'string', 'max:2048'],
+            'video_url' => $this->videoSourceRules(),
+            'video' => ['nullable', 'file', 'mimes:mp4,mov,m4v,webm,avi,mkv', 'max:512000'],
         ]);
 
         $validated['workout_exercise_id'] = $workoutExerciseId
             ?: (int) $validated['workout_exercise_id'];
 
+        if ($request->hasFile('video')) {
+            $validated['video_url'] = $this->storeExerciseVideoFile(
+                $request->file('video'),
+                (int) $validated['workout_exercise_id']
+            );
+
+            return $validated;
+        }
+
+        $validated['video_url'] = trim((string) ($validated['video_url'] ?? ''));
+
+        if ($validated['video_url'] === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'video_url' => 'Video URL atau file video wajib diisi.',
+            ]);
+        }
+
         return $validated;
+    }
+
+    private function storeExerciseVideoFile($file, int $workoutExerciseId): string
+    {
+        $extension = $file->guessExtension()
+            ?: $file->getClientOriginalExtension()
+            ?: 'mp4';
+        $extension = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $extension) ?: 'mp4');
+        $path = $file->storeAs(
+            'videos/admin/exercises/'.$workoutExerciseId,
+            'exercise-'.$workoutExerciseId.'-'.now()->format('YmdHis').'.'.$extension,
+            'public'
+        );
+
+        return Storage::url($path);
+    }
+
+    private function videoSourceRules(): array
+    {
+        return [
+            'nullable',
+            'string',
+            'max:2048',
+            function (string $attribute, mixed $value, \Closure $fail): void {
+                $source = trim((string) $value);
+
+                if ($source === ''
+                    || str_starts_with($source, '/storage/')
+                    || str_starts_with($source, '/videos/')) {
+                    return;
+                }
+
+                $scheme = strtolower((string) parse_url($source, PHP_URL_SCHEME));
+                if (! in_array($scheme, ['http', 'https'], true)
+                    || filter_var($source, FILTER_VALIDATE_URL) === false) {
+                    $fail('Video URL harus berupa http(s), /storage/..., atau /videos/....');
+                }
+            },
+        ];
     }
 
     private function profileData(array $validated, ?User $fallback = null): array
@@ -813,6 +978,65 @@ class AdminController extends Controller
         ];
     }
 
+    private function athleteVideoQuery()
+    {
+        return DB::table('workout_recordings')
+            ->leftJoin('users', 'users.id', '=', 'workout_recordings.user_id')
+            ->leftJoin('workouts', 'workouts.id', '=', 'workout_recordings.workout_id')
+            ->leftJoin(
+                'coach_reviews',
+                'coach_reviews.workout_recording_id',
+                '=',
+                'workout_recordings.id'
+            )
+            ->select([
+                'workout_recordings.*',
+                'users.name as athlete_name',
+                'users.email as athlete_email',
+                'workouts.title as workout_title',
+                'workouts.name as workout_name',
+                'coach_reviews.status as review_status',
+                'coach_reviews.score as review_score',
+                'coach_reviews.feedback as review_feedback',
+                'coach_reviews.reviewed_at as reviewed_at',
+            ]);
+    }
+
+    private function athleteVideoPayload($recording): array
+    {
+        if (! $recording) {
+            return [];
+        }
+
+        return [
+            'id' => (int) $recording->id,
+            'user_id' => (int) $recording->user_id,
+            'athlete_name' => $recording->athlete_name,
+            'athlete_email' => $recording->athlete_email,
+            'workout_id' => (int) $recording->workout_id,
+            'day_number' => (int) $recording->day_number,
+            'workout_title' => $recording->workout_title
+                ?: ($recording->workout_name ?: 'Day '.$recording->day_number),
+            'uploaded_at' => $this->dateToIso($recording->created_at),
+            'recorded_at' => $this->dateToIso($recording->recorded_at),
+            'status' => $recording->review_status ?: 'pending',
+            'score' => $recording->review_score === null
+                ? null
+                : (int) $recording->review_score,
+            'feedback' => $recording->review_feedback,
+            'reviewed_at' => $this->dateToIso($recording->reviewed_at),
+            'duration_seconds' => $recording->duration_seconds === null
+                ? null
+                : (int) $recording->duration_seconds,
+            'mime_type' => $recording->mime_type,
+            'file_size' => $recording->file_size === null
+                ? null
+                : (int) $recording->file_size,
+            'video_url' => $this->absoluteUrl($recording->file_url),
+            'file_url' => $this->absoluteUrl($recording->file_url),
+        ];
+    }
+
     private function dateToIso($value): ?string
     {
         if (! $value) {
@@ -820,6 +1044,29 @@ class AdminController extends Controller
         }
 
         return \Illuminate\Support\Carbon::parse($value)->toISOString();
+    }
+
+    private function absoluteUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if ($path && str_starts_with($path, '/storage/')) {
+            return request()->getSchemeAndHttpHost().$path;
+        }
+
+        if (str_starts_with($url, '/storage/')) {
+            return request()->getSchemeAndHttpHost().$url;
+        }
+
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            return $url;
+        }
+
+        return request()->getSchemeAndHttpHost().'/'.ltrim($url, '/');
     }
 
     private function denyUnlessAdmin(Request $request)
