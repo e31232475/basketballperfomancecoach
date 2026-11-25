@@ -1,6 +1,24 @@
 # basketball_performance_coach
 
-A new Flutter project.
+Flutter athlete app for Basketball Performance Coach.
+
+## Backend connection
+
+The local Android emulator default API is:
+
+```text
+http://10.0.2.2:8001/api
+```
+
+That points to the same Laravel backend used by `coach_web`
+(`http://127.0.0.1:8001/api` on the host machine), so athlete profile updates
+such as `gender` and `profile_photo_url` appear in the coach dashboard.
+
+For another backend, build with:
+
+```text
+flutter build apk --dart-define=API_BASE_URL=https://your-domain.example/api
+```
 
 ## Getting Started
 

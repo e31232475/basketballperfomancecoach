@@ -203,6 +203,38 @@ class CoachController extends Controller
         ]);
     }
 
+    public function approveIntermediate(Request $request, $userId)
+    {
+        if ($denied = $this->denyUnlessCoach($request)) {
+            return $denied;
+        }
+
+        $athlete = $this->athleteQuery()
+            ->where('id', $userId)
+            ->first();
+
+        if (! $athlete) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Atlet tidak ditemukan',
+            ], 404);
+        }
+
+        $athlete->forceFill([
+            'training_level' => 'Intermediate',
+            'intermediate_approved_at' => now(),
+            'intermediate_approved_by' => $request->user()?->id,
+        ])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Akses Intermediate berhasil diberikan',
+            'data' => [
+                'athlete' => $this->athletePayload($athlete->fresh()),
+            ],
+        ]);
+    }
+
     private function athleteQuery()
     {
         $query = User::query();
@@ -243,16 +275,24 @@ class CoachController extends Controller
         $performance = $this->performanceProgress((int) $user->id);
         $reviewCount = $this->coachReviewCount((int) $user->id);
         $programStats = $this->programStats($user);
+        $beginnerCompleted = $this->isLevelCompleted((int) $user->id, 'Beginner');
+        $intermediateApproved = $this->trainingLevel($user) === 'Intermediate';
         $rankingScore = $this->rankingScore($programStats['consistency_progress'], $performance);
 
         return [
             'id' => (int) $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'training_level' => $user->training_level,
+            'training_level' => $this->trainingLevel($user),
             'height' => $user->height ? (float) $user->height : null,
             'weight' => $user->weight ? (float) $user->weight : null,
             'age' => $user->age ? (int) $user->age : null,
+            'gender' => $user->gender,
+            'profile_photo_url' => $this->absoluteUrl($user->profile_photo_url),
+            'beginner_program_completed' => $beginnerCompleted,
+            'intermediate_access_approved' => $intermediateApproved,
+            'can_promote_to_intermediate' => ! $intermediateApproved,
+            'intermediate_approved_at' => optional($user->intermediate_approved_at)->toISOString(),
             'consistency_progress' => $programStats['consistency_progress'],
             'performance_progress' => $performance,
             'coach_score' => $performance,
@@ -409,7 +449,11 @@ class CoachController extends Controller
 
     private function programWorkouts(User $user)
     {
-        $level = trim((string) ($user->training_level ?: 'Beginner'));
+        return $this->programWorkoutsForLevel($this->trainingLevel($user));
+    }
+
+    private function programWorkoutsForLevel(string $level)
+    {
         $matchedLevel = Workout::whereRaw('LOWER(level) = ?', [strtolower($level)])
             ->value('level')
             ?: Workout::whereRaw('LOWER(level) = ?', ['beginner'])->value('level');
@@ -424,6 +468,35 @@ class CoachController extends Controller
         return $query
             ->orderBy('day_number')
             ->get(['id', 'title', 'name', 'level', 'day_number']);
+    }
+
+    private function isLevelCompleted(int $userId, string $level): bool
+    {
+        $workouts = $this->programWorkoutsForLevel($level);
+
+        if ($workouts->isEmpty()) {
+            return false;
+        }
+
+        foreach ($workouts as $workout) {
+            $completed = UserWorkoutLog::where('user_id', $userId)
+                ->where('day_number', (int) $workout->day_number)
+                ->where('status', 'completed')
+                ->exists();
+
+            if (! $completed) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function trainingLevel(User $user): string
+    {
+        return strtolower(trim((string) $user->training_level)) === 'intermediate'
+            ? 'Intermediate'
+            : 'Beginner';
     }
 
     private function performanceProgress(int $userId): int

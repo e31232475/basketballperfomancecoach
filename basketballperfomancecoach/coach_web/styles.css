@@ -288,6 +288,56 @@ button:disabled {
   font-size: 12px;
 }
 
+.formula-card {
+  margin-top: 16px;
+}
+
+.formula-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.formula-item {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #0d1421;
+}
+
+.formula-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.formula-value {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.formula-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.formula-note.compact {
+  margin: -4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #0d1421;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -548,6 +598,66 @@ tr:hover td {
 .list {
   display: grid;
   gap: 12px;
+}
+
+.athlete-profile-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #0d1421;
+}
+
+.athlete-avatar-lg {
+  display: grid;
+  flex: 0 0 auto;
+  width: 82px;
+  height: 82px;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid rgba(18, 231, 255, 0.45);
+  border-radius: 50%;
+  background: #172033;
+  color: var(--secondary);
+  font-size: 30px;
+  font-weight: 950;
+}
+
+.athlete-avatar-lg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.table-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.table-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(18, 231, 255, 0.45);
+  border-radius: 50%;
+  background: #172033;
+  color: var(--secondary);
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.table-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .list-item {
@@ -834,6 +944,12 @@ tr:hover td {
   text-transform: uppercase;
 }
 
+.field-help {
+  color: var(--muted-2);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .form-actions {
   display: flex;
   gap: 10px;
@@ -1017,7 +1133,8 @@ tr:hover td {
 
   .kpi-grid,
   .two-col,
-  .admin-grid {
+  .admin-grid,
+  .formula-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1048,7 +1165,8 @@ tr:hover td {
   .two-col,
   .admin-grid,
   .auth-grid,
-  .form-split {
+  .form-split,
+  .formula-grid {
     grid-template-columns: 1fr;
   }
 

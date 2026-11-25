@@ -37,6 +37,11 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     final provider = context.watch<WorkoutProvider>();
     final workouts = provider.workouts;
     final completed = workouts.where((workout) => workout.completed).length;
+    final hasIntermediateLock = workouts.any(
+      (workout) =>
+          workout.lockedReason == 'beginner_required' ||
+          workout.lockedReason == 'coach_approval_required',
+    );
     final current = workouts.cast<WorkoutDay?>().firstWhere(
       (workout) => workout != null && !workout.completed && !workout.locked,
       orElse: () => null,
@@ -177,14 +182,16 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                           isCurrent: current?.id == workout.id,
                           onPreview: () => _open(workout),
                           onStart: workout.locked ? null : () => _open(workout),
-                          onLocked: () => _lockedDialog(context),
+                          onLocked: () => _lockedDialog(context, workout),
                         ),
                       ),
                     ),
                     const SizedBox(height: 22),
-                    const Center(
+                    Center(
                       child: Text(
-                        'DAYS 8-14 LOCKED',
+                        hasIntermediateLock
+                            ? 'INTERMEDIATE NEEDS COACH APPROVAL'
+                            : 'PROGRAM SEQUENCE ACTIVE',
                         style: TextStyle(
                           color: AppColors.text,
                           fontSize: 16,
@@ -208,12 +215,12 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     );
   }
 
-  void _lockedDialog(BuildContext context) {
+  void _lockedDialog(BuildContext context, WorkoutDay workout) {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Locked Workout'),
-        content: const Text('Complete previous workout first'),
+        content: Text(workout.lockMessage ?? 'Complete previous workout first'),
         actions: [
           TextButton(
             onPressed: Navigator.of(context).pop,
@@ -244,6 +251,7 @@ class _WorkoutCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final completed = workout.completed;
     final locked = workout.locked;
+    final lockMessage = workout.lockMessage;
     final color = completed
         ? AppColors.cyan
         : isCurrent
@@ -311,6 +319,7 @@ class _WorkoutCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 10,
+                      runSpacing: 8,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         EliteBadge(
@@ -334,6 +343,44 @@ class _WorkoutCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (locked && lockMessage != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.orange.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.orange.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: AppColors.orange,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                lockMessage,
+                                style: const TextStyle(
+                                  color: AppColors.text,
+                                  fontSize: 12,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -6,14 +6,16 @@ import 'progress/progress_screen.dart';
 import 'workout/workout_list_screen.dart';
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  const MainShell({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> {
-  int _index = 0;
+  late int _index;
 
   final _screens = const [
     HomeScreen(),
@@ -21,6 +23,12 @@ class _MainShellState extends State<MainShell> {
     ProgressScreen(),
     ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex.clamp(0, _screens.length - 1).toInt();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -62,6 +63,7 @@ class AuthController extends Controller
             'email' => strtolower($validated['email']),
             'role' => $role,
             'password' => Hash::make($validated['password']),
+            'training_level' => $role === 'athlete' ? 'Beginner' : null,
             'personalization_completed' => $role !== 'athlete',
         ]);
 
@@ -164,7 +166,6 @@ class AuthController extends Controller
 
         $user = User::where('email', $email)->first();
         $data = [
-            'name' => $firebaseUser['name'] ?? strtok($email, '@'),
             'email' => $email,
             'email_verified_at' => now(),
             'firebase_uid' => $firebaseUser['uid'],
@@ -175,12 +176,23 @@ class AuthController extends Controller
                 return $denied;
             }
 
-            $user->forceFill($data)->save();
+            $googleProfile = [
+                ...$data,
+                'name' => $user->name ?: ($firebaseUser['name'] ?? strtok($email, '@')),
+                'profile_photo_url' => $user->profile_photo_url
+                    ?: ($firebaseUser['picture'] ?? null),
+                'training_level' => $user->training_level ?: 'Beginner',
+            ];
+
+            $user->forceFill($googleProfile)->save();
         } else {
             $user = User::create([
                 ...$data,
+                'name' => $firebaseUser['name'] ?? strtok($email, '@'),
                 'role' => 'athlete',
                 'password' => Hash::make(Str::random(40)),
+                'profile_photo_url' => $firebaseUser['picture'] ?? null,
+                'training_level' => 'Beginner',
                 'personalization_completed' => false,
             ]);
         }
@@ -199,21 +211,14 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email' => ['required', 'email', 'ends_with:@gmail.com'],
-            'portal' => [
-                'sometimes',
-                'string',
-                Rule::in([self::ATHLETE_PORTAL, ...self::STAFF_PORTALS]),
-            ],
             'new_password' => [
                 'required',
                 'string',
                 'min:8',
                 'regex:/^(?=.*[A-Za-z])(?=.*\d).+$/',
-                'confirmed',
             ],
         ], [
             'email.ends_with' => 'Please use a Gmail address',
-            'new_password.confirmed' => 'Password confirmation does not match',
             'new_password.regex' => 'Password must include letters and numbers',
         ]);
 
@@ -224,10 +229,6 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Email not registered',
             ], 404);
-        }
-
-        if ($denied = $this->denyUserForPortal($user, $this->portal($validated))) {
-            return $denied;
         }
 
         $user->password = Hash::make($validated['new_password']);
@@ -303,10 +304,9 @@ class AuthController extends Controller
             'height' => ['required', 'numeric', 'min:80', 'max:250'],
             'weight' => ['required', 'numeric', 'min:25', 'max:250'],
             'age' => ['required', 'integer', 'min:8', 'max:80'],
-            'training_level' => [
-                'required',
-                Rule::in(['Beginner', 'Intermediate']),
-            ],
+            'gender' => ['required', 'string', Rule::in(['male', 'female'])],
+            'profile_photo_url' => ['nullable', 'url', 'max:2048'],
+            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         $authenticatedUser = $request->user('sanctum');
@@ -350,12 +350,26 @@ class AuthController extends Controller
             ], 403);
         }
 
+        $profilePhotoUrl = $user->profile_photo_url;
+
+        if ($request->hasFile('profile_photo')) {
+            $profilePhotoUrl = $this->storeProfilePhoto($request, $user);
+        } elseif (array_key_exists('profile_photo_url', $validated)) {
+            if ($validated['profile_photo_url'] !== $user->profile_photo_url) {
+                $this->deleteLocalProfilePhoto($user->profile_photo_url);
+            }
+
+            $profilePhotoUrl = $validated['profile_photo_url'];
+        }
+
         $userData = [
             'name' => $validated['name'],
             'height' => $validated['height'],
             'weight' => $validated['weight'],
             'age' => $validated['age'],
-            'training_level' => $validated['training_level'],
+            'gender' => $validated['gender'],
+            'profile_photo_url' => $profilePhotoUrl,
+            'training_level' => $this->trainingLevel($user),
             'personalization_completed' => true,
         ];
 
@@ -383,7 +397,11 @@ class AuthController extends Controller
             'height' => $height,
             'weight' => $weight,
             'age' => $user->age ? (int) $user->age : null,
-            'training_level' => $user->training_level,
+            'gender' => $user->gender,
+            'profile_photo_url' => $this->absoluteUrl($user->profile_photo_url),
+            'training_level' => $this->trainingLevel($user),
+            'intermediate_access_approved' => $this->trainingLevel($user) === 'Intermediate',
+            'intermediate_approved_at' => optional($user->intermediate_approved_at)->toISOString(),
             'personalization_completed' => $isPersonalized,
             'is_personalized' => $isPersonalized,
             'athlete_info' => [
@@ -516,6 +534,7 @@ class AuthController extends Controller
             'uid' => $payload['sub'],
             'email' => $payload['email'] ?? null,
             'name' => $payload['name'] ?? null,
+            'picture' => $payload['picture'] ?? null,
         ];
     }
 
@@ -534,7 +553,8 @@ class AuthController extends Controller
             && filled($user->height)
             && filled($user->weight)
             && filled($user->age)
-            && filled($user->training_level);
+            && filled($user->gender)
+            && filled($this->trainingLevel($user));
     }
 
     private function bmi(?float $height, ?float $weight): ?float
@@ -568,6 +588,73 @@ class AuthController extends Controller
             return 'Setup required';
         }
 
-        return ($user->training_level ?? 'Beginner').' Basketball Athlete';
+        return $this->trainingLevel($user).' Basketball Athlete';
+    }
+
+    private function trainingLevel(User $user): string
+    {
+        return strtolower(trim((string) $user->training_level)) === 'intermediate'
+            ? 'Intermediate'
+            : 'Beginner';
+    }
+
+    private function storeProfilePhoto(Request $request, User $user): string
+    {
+        $file = $request->file('profile_photo');
+        $extension = $file->guessExtension()
+            ?: $file->getClientOriginalExtension()
+            ?: 'jpg';
+        $path = $file->storeAs(
+            'profile-photos/user-'.$user->id,
+            'profile-'.now()->format('YmdHis').'.'.$extension,
+            'public'
+        );
+
+        $this->deleteLocalProfilePhoto($user->profile_photo_url);
+
+        return $this->absoluteUrl(Storage::url($path));
+    }
+
+    private function deleteLocalProfilePhoto(?string $url): void
+    {
+        if (! $url) {
+            return;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?: $url;
+        $normalized = ltrim($path, '/');
+
+        if (str_starts_with($normalized, 'storage/profile-photos/')) {
+            $normalized = substr($normalized, strlen('storage/'));
+        }
+
+        if (! str_starts_with($normalized, 'profile-photos/')) {
+            return;
+        }
+
+        Storage::disk('public')->delete($normalized);
+    }
+
+    private function absoluteUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if ($path && str_starts_with($path, '/storage/')) {
+            return request()->getSchemeAndHttpHost().$path;
+        }
+
+        if (str_starts_with($url, '/storage/')) {
+            return request()->getSchemeAndHttpHost().$url;
+        }
+
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            return $url;
+        }
+
+        return request()->getSchemeAndHttpHost().'/'.ltrim($url, '/');
     }
 }

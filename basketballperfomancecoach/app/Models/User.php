@@ -20,7 +20,11 @@ class User extends Authenticatable
         'height',
         'weight',
         'age',
+        'gender',
+        'profile_photo_url',
         'training_level',
+        'intermediate_approved_at',
+        'intermediate_approved_by',
         'personalization_completed',
     ];
 
@@ -37,6 +41,8 @@ class User extends Authenticatable
             'height' => 'float',
             'weight' => 'float',
             'age' => 'integer',
+            'intermediate_approved_at' => 'datetime',
+            'intermediate_approved_by' => 'integer',
             'personalization_completed' => 'boolean',
         ];
     }

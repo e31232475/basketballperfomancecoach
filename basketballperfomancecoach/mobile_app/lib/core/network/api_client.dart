@@ -41,6 +41,25 @@ class ApiClient {
     return _decode(response);
   }
 
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    String? fileField,
+    String? filePath,
+  }) async {
+    final request = http.MultipartRequest('POST', _uri(path));
+    request.headers.addAll(_headers(includeJsonContentType: false));
+    request.fields.addAll(fields);
+
+    if (fileField != null && filePath != null && filePath.isNotEmpty) {
+      request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+    }
+
+    final streamedResponse = await _client.send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+    return _decode(response);
+  }
+
   Uri _uri(String path) {
     final normalizedBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
@@ -49,10 +68,10 @@ class ApiClient {
     return Uri.parse('$normalizedBase$normalizedPath');
   }
 
-  Map<String, String> _headers() {
+  Map<String, String> _headers({bool includeJsonContentType = true}) {
     return {
       'Accept': 'application/json',
-      'Content-Type': 'application/json',
+      if (includeJsonContentType) 'Content-Type': 'application/json',
       if (_token != null && _token!.isNotEmpty)
         'Authorization': 'Bearer $_token',
     };

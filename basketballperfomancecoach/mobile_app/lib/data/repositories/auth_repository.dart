@@ -38,7 +38,12 @@ class AuthRepository {
   }) async {
     final response = await _apiClient.post(
       '/register',
-      body: {'name': name, 'email': email, 'password': password},
+      body: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'password_confirmation': password,
+      },
     );
     final data = response['data'] as Map<String, dynamic>;
     final token = data['token']?.toString();
@@ -71,19 +76,34 @@ class AuthRepository {
     required double height,
     required double weight,
     required int age,
-    required String trainingLevel,
+    required String gender,
+    String? profilePhotoPath,
+    bool removeProfilePhoto = false,
   }) async {
-    final response = await _apiClient.post(
-      '/personalization',
-      body: {
-        'user_id': userId,
-        'name': name,
-        'height': height,
-        'weight': weight,
-        'age': age,
-        'training_level': trainingLevel,
-      },
-    );
+    final body = <String, dynamic>{
+      'user_id': userId,
+      'name': name,
+      'height': height,
+      'weight': weight,
+      'age': age,
+      'gender': gender,
+      if (removeProfilePhoto) 'profile_photo_url': null,
+    };
+    final response = profilePhotoPath == null
+        ? await _apiClient.post('/personalization', body: body)
+        : await _apiClient.postMultipart(
+            '/personalization',
+            fields: {
+              'user_id': userId.toString(),
+              'name': name,
+              'height': height.toString(),
+              'weight': weight.toString(),
+              'age': age.toString(),
+              'gender': gender,
+            },
+            fileField: 'profile_photo',
+            filePath: profilePhotoPath,
+          );
     final user = UserProfile.fromJson(response['data'] as Map<String, dynamic>);
     await _sessionStorage.saveSession(userId: user.id);
     return user;

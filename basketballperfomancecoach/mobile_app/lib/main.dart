@@ -19,7 +19,7 @@ void main() {
 
   const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000/api',
+    defaultValue: 'http://10.0.2.2:8001/api',
   );
 
   final apiClient = ApiClient(baseUrl: baseUrl);
@@ -69,7 +69,7 @@ class BasketballPerformanceCoachApp extends StatelessWidget {
             return const PersonalizationScreen();
           }
 
-          return const MainShell();
+          return MainShell(initialIndex: auth.consumeProgramRedirect() ? 1 : 0);
         },
       ),
     );

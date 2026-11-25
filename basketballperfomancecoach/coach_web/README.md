@@ -18,14 +18,10 @@ http://localhost/basketballperfomancecoach_coach_web/
 
 1. Buka halaman login.
 2. Login memakai akun coach/admin dari backend Laravel.
-3. Periksa ringkasan dashboard dan buka menu `Review`.
-4. Cari/filter recording, lalu klik salah satu tombol `Review`.
-5. Isi status, score, dan catatan coach (semuanya wajib).
+3. Buka menu `Review`.
+4. Klik salah satu tombol `Review`.
+5. Isi status, score, dan catatan coach.
 6. Klik `Simpan Review`.
-
-Detail atlet menampilkan progress Day 1-14 dan riwayat review lengkap. Hasil
-status, score, dan feedback yang disimpan juga tersedia pada halaman progress
-aplikasi atlet.
 
 ## Menyambungkan ke backend Laravel
 
@@ -63,22 +59,10 @@ POST /api/coach/recordings/{recordingId}/review
 
 Web ini memakai endpoint backend secara langsung. Jika endpoint belum tersedia atau token tidak valid, halaman akan menampilkan error dari API.
 
-## Fitur admin
-
-- Dashboard ringkasan total user, program, exercise, video latihan, dan video atlet pending.
-- Role management untuk athlete, coach, dan admin.
-- Exercise dikelola di dalam program/workout agar relasinya sesuai ERD.
-- Video latihan dapat memakai URL/path server atau upload file. Upload disimpan
-  backend sebagai path publik `/storage/...`.
-- Penghapusan user, program, exercise, dan video selalu meminta konfirmasi.
-
 ## Konsep progress
 
 - Consistency progress: otomatis dari aktivitas atlet, seperti latihan dikirim dan waktu upload.
 - Performance progress: hanya berubah setelah coach memberi validasi video.
-- Jumlah day dan pembagi consistency mengikuti workout pada `training_level`
-  atlet di database. Contoh: 3 dari 14 workout menghasilkan 21%, bukan 3 dari
-  seluruh program lintas level.
 
 Status review yang dipakai:
 

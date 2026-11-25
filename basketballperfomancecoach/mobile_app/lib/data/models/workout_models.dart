@@ -9,6 +9,8 @@ class WorkoutDay {
     required this.status,
     required this.completed,
     required this.locked,
+    required this.lockedReason,
+    required this.lockMessage,
     required this.exerciseCount,
     required this.progressPercentage,
     required this.totalSets,
@@ -26,6 +28,8 @@ class WorkoutDay {
   final String status;
   final bool completed;
   final bool locked;
+  final String? lockedReason;
+  final String? lockMessage;
   final int exerciseCount;
   final int progressPercentage;
   final int totalSets;
@@ -47,6 +51,8 @@ class WorkoutDay {
       status: json['status']?.toString() ?? 'locked',
       completed: json['completed'] == true,
       locked: json['locked'] == true,
+      lockedReason: json['locked_reason']?.toString(),
+      lockMessage: json['lock_message']?.toString(),
       exerciseCount: (json['exercise_count'] as num?)?.toInt() ?? 0,
       progressPercentage: (json['progress_percentage'] as num?)?.toInt() ?? 0,
       totalSets: (json['total_sets'] as num?)?.toInt() ?? 0,

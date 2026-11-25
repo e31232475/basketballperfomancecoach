@@ -27,7 +27,8 @@ function emptyAdminUserForm() {
     height: "",
     weight: "",
     age: "",
-    training_level: "Beginner",
+    gender: "",
+    profile_photo_url: "",
   };
 }
 
@@ -145,6 +146,35 @@ function rankingScoreForAthlete(athlete) {
   );
 
   return clampPercent(athlete.ranking_score ?? (consistency + coachScore) / 2);
+}
+
+function athleteCalculationStats(athlete, days = []) {
+  const totalDays = Number(athlete.total_program_days || days.length || 0);
+  const completedDays = Number(athlete.completed_days || 0);
+  const recordedDays = Number(athlete.recorded_days || 0);
+  const countedDays = Math.max(completedDays, recordedDays);
+  const consistency = clampPercent(athlete.consistency_progress);
+  const performance = clampPercent(
+    athlete.coach_score ?? athlete.performance_progress,
+  );
+  const reviewCount = Number(athlete.coach_review_count || 0);
+  const ranking = rankingScoreForAthlete({
+    ...athlete,
+    consistency_progress: consistency,
+    coach_score: performance,
+    performance_progress: performance,
+  });
+
+  return {
+    totalDays,
+    completedDays,
+    recordedDays,
+    countedDays,
+    consistency,
+    performance,
+    reviewCount,
+    ranking,
+  };
 }
 
 function athleteRankings(athletes) {
@@ -535,6 +565,40 @@ async function submitReview(event) {
   render();
 }
 
+async function approveIntermediateAccess(id) {
+  const athlete = state.athletes.find((item) => Number(item.id) === Number(id));
+  if (!athlete) return;
+
+  if (!confirm(`Berikan akses Intermediate untuk ${athlete.name || "atlet ini"}?`)) {
+    return;
+  }
+
+  state.loading = true;
+  state.error = "";
+  render();
+
+  try {
+    const response = await request(`/coach/athletes/${id}/approve-intermediate`, {
+      method: "POST",
+    });
+    const savedAthlete = response.data?.athlete || response.data || null;
+
+    if (savedAthlete) {
+      state.athletes = state.athletes.map((item) =>
+        Number(item.id) === Number(id) ? { ...item, ...savedAthlete } : item,
+      );
+      state.dashboard = dashboardFromData(state.athletes, state.recordings);
+    }
+
+    state.loading = false;
+    render();
+  } catch (error) {
+    state.error = error.message;
+    state.loading = false;
+    render();
+  }
+}
+
 function selectedRecording() {
   return state.recordings.find(
     (recording) => Number(recording.id) === Number(state.selectedRecordingId),
@@ -675,7 +739,7 @@ function filteredAdminUsers() {
       state.adminRoleFilter === "all" || user.role === state.adminRoleFilter;
     const queryMatches =
       !query ||
-      [user.name, user.email, user.role, user.training_level]
+      [user.name, user.email, user.role, user.training_level, user.gender]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query));
 
@@ -703,7 +767,8 @@ function editAdminUser(id) {
     height: user.height ?? "",
     weight: user.weight ?? "",
     age: user.age ?? "",
-    training_level: user.training_level || "Beginner",
+    gender: user.gender || "",
+    profile_photo_url: user.profile_photo_url || "",
   };
   render();
 }
@@ -716,7 +781,8 @@ function adminFormPayload(form) {
     height: stringOrNull(form.get("height")),
     weight: stringOrNull(form.get("weight")),
     age: stringOrNull(form.get("age")),
-    training_level: stringOrNull(form.get("training_level")),
+    gender: stringOrNull(form.get("gender")),
+    profile_photo_url: stringOrNull(form.get("profile_photo_url")),
   };
   const password = String(form.get("password") || "");
   const passwordConfirmation = String(form.get("password_confirmation") || "");
@@ -1731,7 +1797,7 @@ function renderRank() {
       <div class="program-detail-head">
         <div>
           <h2 class="card-title">Ranking Atlet</h2>
-          <div class="muted small ranking-note">Skor ranking = 50% consistency + 50% nilai review coach.</div>
+          <div class="muted small ranking-note">Ranking = round((Consistency + Performance) / 2). Performance memakai rata-rata score review coach yang sudah divalidasi.</div>
         </div>
         <span class="pill info">${escapeHtml(rankings.length)} atlet</span>
       </div>
@@ -1801,6 +1867,7 @@ function renderAthletes() {
       <div class="search-row">
         <input class="input search-input" id="athlete-search" placeholder="Cari nama, email, atau level" value="${escapeAttr(state.search)}" />
       </div>
+      <div class="formula-note compact">Consistency = workout yang selesai atau sudah punya rekaman / total workout level. Performance = rata-rata score review coach Approved atau Perlu Ulang.</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -1827,16 +1894,34 @@ function renderAthleteDetail(athlete) {
   const recordings = recordingsForSelectedAthlete();
   const reviewHistory = reviewedRecordingsForSelectedAthlete();
   const days = workoutDaysForAthlete(athlete);
+  const stats = athleteCalculationStats(athlete, days);
+  const consistencyNote = stats.totalDays
+    ? `${stats.countedDays} dihitung dari ${stats.totalDays} workout level ini`
+    : "Belum ada workout level ini";
+  const performanceNote = stats.reviewCount
+    ? `Rata-rata ${stats.reviewCount} review coach`
+    : "Belum ada review coach";
+  const approvalNotice = athlete.intermediate_access_approved
+    ? `<div class="notice">Atlet ini sudah memiliki akses Intermediate.</div>`
+    : athlete.beginner_program_completed
+      ? `<div class="notice">Program Beginner selesai. Atlet menunggu approval pelatih untuk membuka Intermediate.</div>`
+      : `<div class="notice">Intermediate masih terkunci sampai atlet menyelesaikan program Beginner atau coach memberi akses manual.</div>`;
 
   return `
     ${renderTopbar(athlete.name, "Detail progress atlet berdasarkan latihan yang dikirim dan review coach.", [
+      renderIntermediateApprovalButton(athlete),
       `<button class="btn ghost" id="back-athletes" type="button">Kembali</button>`,
     ])}
     <section class="grid kpi-grid">
-      ${renderKpi("Consistency", `${athlete.consistency_progress || 0}%`, `${athlete.completed_days || 0} selesai dari ${athlete.total_program_days || days.length} workout level ini`)}
-      ${renderKpi("Performance", `${athlete.performance_progress || 0}%`, "Dari validasi coach")}
+      ${renderKpi("Consistency", `${stats.consistency}%`, consistencyNote)}
+      ${renderKpi("Performance", `${stats.performance}%`, performanceNote)}
       ${renderKpi("Pending Review", athlete.pending_reviews || 0, "Video belum divalidasi")}
       ${renderKpi("Level", athlete.training_level || "-", "Program aktif atlet")}
+    </section>
+    ${renderAthleteFormulaGuide(athlete, days)}
+    <section class="card pad" style="margin-top: 16px">
+      <h2 class="card-title">Akses Level</h2>
+      ${approvalNotice}
     </section>
     <section class="card pad" style="margin-top: 16px">
       <h2 class="card-title">Progress Program ${escapeHtml(athlete.training_level || "Atlet")}</h2>
@@ -1856,11 +1941,14 @@ function renderAthleteDetail(athlete) {
       </div>
       <div class="card pad">
         <h2 class="card-title">Profil</h2>
+        ${renderAthleteProfilePhoto(athlete)}
         <div class="list">
           ${renderProfileLine("Email", athlete.email || "-")}
           ${renderProfileLine("Tinggi", athlete.height ? `${athlete.height} cm` : "-")}
           ${renderProfileLine("Berat", athlete.weight ? `${athlete.weight} kg` : "-")}
           ${renderProfileLine("Usia", athlete.age ? `${athlete.age} tahun` : "-")}
+          ${renderProfileLine("Jenis kelamin", genderLabel(athlete.gender))}
+          ${renderProfileLine("Akses Intermediate", athlete.intermediate_access_approved ? "Disetujui" : "Terkunci")}
           ${renderProfileLine("Program", `${athlete.training_level || "-"} · ${athlete.total_program_days || days.length} workout`)}
           ${renderProfileLine("Status", statusLabel(athlete.status))}
           ${renderProfileLine("Terakhir latihan", formatDateTime(athlete.last_activity_at))}
@@ -1893,6 +1981,30 @@ function renderAthleteDetail(athlete) {
         </table>
       </div>
     </section>
+  `;
+}
+
+function renderAthleteProfilePhoto(athlete) {
+  const photoUrl = resolveBackendAssetUrl(athlete.profile_photo_url);
+  const initial = String(athlete.name || athlete.email || "?")
+    .trim()
+    .slice(0, 1)
+    .toUpperCase();
+
+  return `
+    <div class="athlete-profile-head">
+      <div class="athlete-avatar-lg">
+        ${
+          photoUrl
+            ? `<img src="${escapeAttr(photoUrl)}" alt="Foto profil ${escapeAttr(athlete.name || "atlet")}" loading="lazy" />`
+            : `<span>${escapeHtml(initial || "?")}</span>`
+        }
+      </div>
+      <div class="name-cell">
+        <span class="strong">${escapeHtml(athlete.name || "-")}</span>
+        <span class="muted small">${photoUrl ? "Foto profil atlet" : "Belum ada foto profil"}</span>
+      </div>
+    </div>
   `;
 }
 
@@ -2002,13 +2114,17 @@ function renderAdminUsers() {
             <input class="input" id="admin-age" name="age" type="number" min="8" max="80" value="${escapeAttr(form.age)}" />
           </div>
           <div class="field">
-            <label for="admin-training-level">Level Atlet</label>
-            <select class="select" id="admin-training-level" name="training_level">
+            <label for="admin-gender">Jenis Kelamin</label>
+            <select class="select" id="admin-gender" name="gender">
               <option value="">Tidak diisi</option>
-              <option value="Beginner" ${form.training_level === "Beginner" ? "selected" : ""}>Beginner</option>
-              <option value="Intermediate" ${form.training_level === "Intermediate" ? "selected" : ""}>Intermediate</option>
+              <option value="male" ${form.gender === "male" ? "selected" : ""}>Laki-laki</option>
+              <option value="female" ${form.gender === "female" ? "selected" : ""}>Perempuan</option>
             </select>
           </div>
+        </div>
+        <div class="field">
+          <label for="admin-profile-photo">Foto Profil URL</label>
+          <input class="input" id="admin-profile-photo" name="profile_photo_url" type="url" value="${escapeAttr(form.profile_photo_url)}" />
         </div>
         <div class="form-actions">
           <button class="btn primary" type="submit" ${state.loading ? "disabled" : ""}>${editing ? "Simpan" : "Tambah"}</button>
@@ -2379,6 +2495,56 @@ function renderKpi(label, value, note) {
   `;
 }
 
+function renderAthleteFormulaGuide(athlete, days = []) {
+  const stats = athleteCalculationStats(athlete, days);
+  const consistencyFormula = stats.totalDays
+    ? `round(${stats.countedDays} / ${stats.totalDays} x 100) = ${stats.consistency}%`
+    : "Belum ada workout di program aktif";
+  const performanceFormula = stats.reviewCount
+    ? `round(rata-rata ${stats.reviewCount} score review) = ${stats.performance}%`
+    : "Belum ada score review = 0%";
+  const rankingFormula = `round((${stats.consistency}% + ${stats.performance}%) / 2) = ${stats.ranking}%`;
+
+  return `
+    <section class="card pad formula-card">
+      <div class="program-detail-head">
+        <div>
+          <h2 class="card-title">Rumus Perhitungan</h2>
+          <div class="muted small">Rumus memakai data atlet ini dan hasil akhirnya dibulatkan ke persen terdekat.</div>
+        </div>
+        <span class="pill info">Rumus</span>
+      </div>
+      <div class="formula-grid">
+        ${renderFormulaItem(
+          "Consistency",
+          consistencyFormula,
+          `Mengambil nilai terbesar antara workout selesai (${stats.completedDays}) dan hari yang punya rekaman (${stats.recordedDays}), lalu dibagi total workout level.`,
+        )}
+        ${renderFormulaItem(
+          "Performance",
+          performanceFormula,
+          "Hanya score review dengan status Approved atau Perlu Ulang yang dihitung. Pending tidak masuk rata-rata.",
+        )}
+        ${renderFormulaItem(
+          "Ranking",
+          rankingFormula,
+          "Dipakai di menu Rank untuk mengurutkan atlet: 50% consistency dan 50% performance.",
+        )}
+      </div>
+    </section>
+  `;
+}
+
+function renderFormulaItem(label, formula, note) {
+  return `
+    <article class="formula-item">
+      <div class="formula-label">${escapeHtml(label)}</div>
+      <div class="formula-value">${escapeHtml(formula)}</div>
+      <div class="formula-note">${escapeHtml(note)}</div>
+    </article>
+  `;
+}
+
 function renderAdminUserSummaryItem(user) {
   return `
     <article class="list-item">
@@ -2433,9 +2599,13 @@ function renderAthleteRow(athlete) {
   return `
     <tr>
       <td>
-        <div class="name-cell">
-          <span class="strong">${escapeHtml(athlete.name)}</span>
-          <span class="muted small">${escapeHtml(athlete.email || "-")}</span>
+        <div class="table-profile">
+          ${renderTableAvatar(athlete)}
+          <div class="name-cell">
+            <span class="strong">${escapeHtml(athlete.name)}</span>
+            <span class="muted small">${escapeHtml(athlete.email || "-")}</span>
+            <span class="muted small">${escapeHtml(genderLabel(athlete.gender))}</span>
+          </div>
         </div>
       </td>
       <td>${escapeHtml(athlete.training_level || "-")}</td>
@@ -2453,14 +2623,20 @@ function renderAdminUserRow(user) {
     user.height ? `${user.height}cm` : null,
     user.weight ? `${user.weight}kg` : null,
     user.age ? `${user.age}th` : null,
+    user.gender ? genderLabel(user.gender) : null,
+    user.profile_photo_url ? "Foto" : null,
   ].filter(Boolean);
 
   return `
     <tr>
       <td>
-        <div class="name-cell">
-          <span class="strong">${escapeHtml(user.name || "-")}</span>
-          <span class="muted small">${escapeHtml(user.email || "-")}</span>
+        <div class="table-profile">
+          ${renderTableAvatar(user)}
+          <div class="name-cell">
+            <span class="strong">${escapeHtml(user.name || "-")}</span>
+            <span class="muted small">${escapeHtml(user.email || "-")}</span>
+            <span class="muted small">${escapeHtml(genderLabel(user.gender))}</span>
+          </div>
         </div>
       </td>
       <td>${rolePill(user.role)}</td>
@@ -2474,6 +2650,24 @@ function renderAdminUserRow(user) {
         </div>
       </td>
     </tr>
+  `;
+}
+
+function renderTableAvatar(user) {
+  const photoUrl = resolveBackendAssetUrl(user.profile_photo_url);
+  const initial = String(user.name || user.email || "?")
+    .trim()
+    .slice(0, 1)
+    .toUpperCase();
+
+  return `
+    <div class="table-avatar" aria-hidden="true">
+      ${
+        photoUrl
+          ? `<img src="${escapeAttr(photoUrl)}" alt="" loading="lazy" />`
+          : `<span>${escapeHtml(initial || "?")}</span>`
+      }
+    </div>
   `;
 }
 
@@ -2842,6 +3036,28 @@ function renderProfileLine(label, value) {
   `;
 }
 
+function renderIntermediateApprovalButton(athlete) {
+  if (athlete.intermediate_access_approved) {
+    return `<button class="btn success" type="button" disabled>Intermediate Aktif</button>`;
+  }
+
+  return `
+    <button class="btn primary" data-approve-intermediate="${escapeAttr(athlete.id)}" type="button" ${state.loading ? "disabled" : ""}>
+      Beri Akses Intermediate
+    </button>
+  `;
+}
+
+function genderLabel(value) {
+  const normalized = String(value || "").toLowerCase();
+  const map = {
+    male: "Laki-laki",
+    female: "Perempuan",
+  };
+
+  return map[normalized] || "-";
+}
+
 function renderProgress(value, label, performance = false) {
   const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
   return `
@@ -2931,6 +3147,7 @@ function renderReviewDrawer() {
             <div class="field">
               <label for="review-score">Score Performance</label>
               <input class="input" id="review-score" name="score" type="number" min="0" max="100" value="${escapeAttr(state.reviewDraft.score)}" required />
+              <div class="field-help">Score ini masuk ke rata-rata Performance setelah review disimpan.</div>
             </div>
             <div class="field full">
               <label for="review-feedback">Catatan Coach</label>
@@ -2961,6 +3178,11 @@ function bindShellEvents() {
     ?.addEventListener("click", () => loadCoachData());
   document.querySelectorAll("[data-athlete-id]").forEach((button) => {
     button.addEventListener("click", () => selectAthlete(button.dataset.athleteId));
+  });
+  document.querySelectorAll("[data-approve-intermediate]").forEach((button) => {
+    button.addEventListener("click", () =>
+      approveIntermediateAccess(button.dataset.approveIntermediate),
+    );
   });
   document.querySelectorAll("[data-review-id]").forEach((button) => {
     button.addEventListener("click", () => openReview(button.dataset.reviewId));

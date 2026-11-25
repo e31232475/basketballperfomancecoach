@@ -24,6 +24,15 @@ class WorkoutController extends Controller
             return $denied;
         }
 
+        $user = User::find((int) $user_id);
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan',
+            ], 404);
+        }
+
         $workouts = Workout::orderBy('day_number')->get();
 
         $result = [];
@@ -47,13 +56,16 @@ class WorkoutController extends Controller
                 $exerciseIds,
                 $completedExerciseCount
             );
+            $access = $this->workoutAccess($user, $workout);
             $previousDay = $previousDayByLevel[$levelKey] ?? null;
             $completedDaysForLevel = $completedDaysByLevel[$levelKey] ?? [];
-            $locked = $previousDay !== null
+            $lockedBySequence = $previousDay !== null
                 && ! in_array($previousDay, $completedDaysForLevel, true);
-            $locked = $testingUnlockAllDays ? false : $locked;
+            $lockedBySequence = $testingUnlockAllDays ? false : $lockedBySequence;
+            $locked = $access['locked'] || $lockedBySequence;
+            $visibleCompleted = $completed && ! $access['locked'];
 
-            if ($completed) {
+            if ($visibleCompleted) {
                 $completedDaysByLevel[$levelKey][] = $dayNumber;
             }
 
@@ -73,9 +85,15 @@ class WorkoutController extends Controller
                 'level' => $workout->level ?? 'Beginner',
                 'difficulty' => $workout->level ?? 'Beginner',
                 'estimated_duration' => $this->estimatedDurationMinutes((int) $workout->id),
-                'status' => $completed ? 'completed' : ($locked ? 'locked' : 'unlocked'),
-                'completed' => $completed,
+                'status' => $visibleCompleted ? 'completed' : ($locked ? 'locked' : 'unlocked'),
+                'completed' => $visibleCompleted,
                 'locked' => $locked,
+                'locked_reason' => $access['locked']
+                    ? $access['reason']
+                    : ($lockedBySequence ? 'previous_day_required' : null),
+                'lock_message' => $access['locked']
+                    ? $access['message']
+                    : ($lockedBySequence ? 'Selesaikan workout hari sebelumnya terlebih dahulu.' : null),
                 'exercise_count' => count($exerciseIds),
                 'completed_exercise_count' => $completedExerciseCount,
                 'progress_percentage' => $progressPercentage,
@@ -108,6 +126,10 @@ class WorkoutController extends Controller
 
         if ($userId !== null) {
             if ($denied = $this->denyUnlessAthleteUser($request, (int) $userId)) {
+                return $denied;
+            }
+
+            if ($denied = $this->denyLockedWorkoutAccess((int) $userId, $workout)) {
                 return $denied;
             }
 
@@ -185,6 +207,19 @@ class WorkoutController extends Controller
                 'success' => false,
                 'message' => 'Exercise tidak ada di workout ini',
             ], 422);
+        }
+
+        $workout = Workout::find((int) $validated['workout_id']);
+
+        if (! $workout) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Workout tidak ditemukan',
+            ], 404);
+        }
+
+        if ($denied = $this->denyLockedWorkoutAccess((int) $validated['user_id'], $workout)) {
+            return $denied;
         }
 
         $progress = ExerciseProgress::updateOrCreate(
@@ -272,6 +307,19 @@ class WorkoutController extends Controller
                 'success' => false,
                 'message' => 'Exercise tidak ada di workout ini',
             ], 422);
+        }
+
+        $workout = Workout::find((int) $validated['workout_id']);
+
+        if (! $workout) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Workout tidak ditemukan',
+            ], 404);
+        }
+
+        if ($denied = $this->denyLockedWorkoutAccess((int) $validated['user_id'], $workout)) {
+            return $denied;
         }
 
         if ((int) $validated['set_number'] > (int) $workoutExercise->sets) {
@@ -364,6 +412,10 @@ class WorkoutController extends Controller
             ], 422);
         }
 
+        if ($denied = $this->denyLockedWorkoutAccess((int) $validated['user_id'], $workout)) {
+            return $denied;
+        }
+
         $file = $request->file('video');
         $extension = $file->guessExtension() ?: 'webm';
         $path = $file->storeAs(
@@ -425,6 +477,10 @@ class WorkoutController extends Controller
                 'success' => false,
                 'message' => 'Workout not found',
             ], 404);
+        }
+
+        if ($denied = $this->denyLockedWorkoutAccess((int) $user_id, $workout)) {
+            return $denied;
         }
 
         if (! $this->testingUnlockAllDaysActive()
@@ -507,10 +563,20 @@ class WorkoutController extends Controller
             return $denied;
         }
 
+        $user = User::find((int) $user_id);
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan',
+            ], 404);
+        }
+
         $nextWorkout = Workout::orderBy('day_number')
             ->get()
-            ->first(function ($workout) use ($user_id) {
-                return ! $this->isWorkoutCompletedForUser((int) $user_id, $workout);
+            ->first(function ($workout) use ($user_id, $user) {
+                return ! $this->workoutAccess($user, $workout)['locked']
+                    && ! $this->isWorkoutCompletedForUser((int) $user_id, $workout);
             });
 
         return response()->json([
@@ -1006,7 +1072,7 @@ class WorkoutController extends Controller
             'current_streak' => $this->currentStreak($completedDays),
             'total_workouts' => $totalProgramDays,
             'total_program_days' => $totalProgramDays,
-            'training_level' => $user?->training_level,
+            'training_level' => $user ? $this->trainingLevel($user) : null,
             'program_days' => $programWorkouts
                 ->groupBy('day_number')
                 ->map(function ($workouts, $dayNumber) {
@@ -1038,7 +1104,11 @@ class WorkoutController extends Controller
 
     private function programWorkouts(User $user)
     {
-        $level = trim((string) ($user->training_level ?: 'Beginner'));
+        return $this->programWorkoutsForLevel($this->trainingLevel($user));
+    }
+
+    private function programWorkoutsForLevel(string $level)
+    {
         $matchedLevel = Workout::whereRaw('LOWER(level) = ?', [strtolower($level)])
             ->value('level')
             ?: Workout::whereRaw('LOWER(level) = ?', ['beginner'])->value('level');
@@ -1051,6 +1121,87 @@ class WorkoutController extends Controller
         }
 
         return $query->orderBy('day_number')->get();
+    }
+
+    private function denyLockedWorkoutAccess(int $userId, Workout $workout)
+    {
+        $user = User::find($userId);
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan',
+            ], 404);
+        }
+
+        $access = $this->workoutAccess($user, $workout);
+
+        if (! $access['locked']) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $access['message'],
+            'data' => [
+                'locked_reason' => $access['reason'],
+            ],
+        ], 403);
+    }
+
+    private function workoutAccess(User $user, Workout $workout): array
+    {
+        $workoutLevel = $this->normalizeTrainingLevel($workout->level ?? 'Beginner');
+        $athleteLevel = $this->trainingLevel($user);
+
+        if ($workoutLevel === 'Intermediate' && $athleteLevel !== 'Intermediate') {
+            $beginnerCompleted = $this->isLevelCompleted((int) $user->id, 'Beginner');
+
+            return [
+                'locked' => true,
+                'reason' => $beginnerCompleted
+                    ? 'coach_approval_required'
+                    : 'beginner_required',
+                'message' => $beginnerCompleted
+                    ? 'Program Intermediate terkunci. Tunggu approval pelatih untuk naik level.'
+                    : 'Program Intermediate terkunci. Selesaikan program Beginner terlebih dahulu.',
+            ];
+        }
+
+        return [
+            'locked' => false,
+            'reason' => null,
+            'message' => null,
+        ];
+    }
+
+    private function isLevelCompleted(int $userId, string $level): bool
+    {
+        $workouts = $this->programWorkoutsForLevel($level);
+
+        if ($workouts->isEmpty()) {
+            return false;
+        }
+
+        foreach ($workouts as $workout) {
+            if (! $this->isWorkoutCompletedForUser($userId, $workout)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function trainingLevel(User $user): string
+    {
+        return $this->normalizeTrainingLevel($user->training_level ?: 'Beginner');
+    }
+
+    private function normalizeTrainingLevel(?string $level): string
+    {
+        return strtolower(trim((string) $level)) === 'intermediate'
+            ? 'Intermediate'
+            : 'Beginner';
     }
 
     private function coachReviewsByDay(int $userId): array

@@ -62,6 +62,7 @@ class AdminController extends Controller
             'email' => strtolower($validated['email']),
             'role' => $role,
             'password' => Hash::make($validated['password']),
+            'training_level' => $role === 'athlete' ? 'Beginner' : null,
             'personalization_completed' => $this->isPersonalized($validated, $role),
         ]);
 
@@ -122,6 +123,10 @@ class AdminController extends Controller
 
         if (! empty($validated['password'])) {
             $updates['password'] = Hash::make($validated['password']);
+        }
+
+        if ($role === 'athlete' && blank($user->training_level)) {
+            $updates['training_level'] = 'Beginner';
         }
 
         $user->update($updates);
@@ -664,7 +669,8 @@ class AdminController extends Controller
             'height' => ['nullable', 'numeric', 'min:80', 'max:250'],
             'weight' => ['nullable', 'numeric', 'min:25', 'max:250'],
             'age' => ['nullable', 'integer', 'min:8', 'max:80'],
-            'training_level' => ['nullable', Rule::in(['Beginner', 'Intermediate'])],
+            'gender' => ['nullable', 'string', Rule::in(['male', 'female'])],
+            'profile_photo_url' => ['nullable', 'url', 'max:2048'],
         ], [
             'email.ends_with' => 'Email wajib menggunakan Gmail',
             'email.unique' => 'Email sudah terdaftar',
@@ -696,7 +702,7 @@ class AdminController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:64'],
-            'video_url' => $this->videoSourceRules(),
+            'video_url' => ['nullable', 'string', 'max:2048'],
             'sets' => ['required', 'integer', 'min:1', 'max:20'],
             'reps' => ['required', 'string', 'max:255'],
             'duration' => ['nullable', 'integer', 'min:1', 'max:3600'],
@@ -712,8 +718,8 @@ class AdminController extends Controller
                 'integer',
                 'exists:workout_exercises,id',
             ],
-            'video_url' => $this->videoSourceRules(),
-            'video' => ['nullable', 'file', 'mimes:mp4,mov,m4v,webm,avi,mkv', 'max:512000'],
+            'video_url' => ['nullable', 'string', 'max:2048'],
+            'video' => ['nullable', 'file', 'max:512000'],
         ]);
 
         $validated['workout_exercise_id'] = $workoutExerciseId
@@ -754,30 +760,6 @@ class AdminController extends Controller
         return Storage::url($path);
     }
 
-    private function videoSourceRules(): array
-    {
-        return [
-            'nullable',
-            'string',
-            'max:2048',
-            function (string $attribute, mixed $value, \Closure $fail): void {
-                $source = trim((string) $value);
-
-                if ($source === ''
-                    || str_starts_with($source, '/storage/')
-                    || str_starts_with($source, '/videos/')) {
-                    return;
-                }
-
-                $scheme = strtolower((string) parse_url($source, PHP_URL_SCHEME));
-                if (! in_array($scheme, ['http', 'https'], true)
-                    || filter_var($source, FILTER_VALIDATE_URL) === false) {
-                    $fail('Video URL harus berupa http(s), /storage/..., atau /videos/....');
-                }
-            },
-        ];
-    }
-
     private function profileData(array $validated, ?User $fallback = null): array
     {
         return [
@@ -785,9 +767,10 @@ class AdminController extends Controller
             'height' => array_key_exists('height', $validated) ? $validated['height'] : $fallback?->height,
             'weight' => array_key_exists('weight', $validated) ? $validated['weight'] : $fallback?->weight,
             'age' => array_key_exists('age', $validated) ? $validated['age'] : $fallback?->age,
-            'training_level' => array_key_exists('training_level', $validated)
-                ? $validated['training_level']
-                : $fallback?->training_level,
+            'gender' => array_key_exists('gender', $validated) ? $validated['gender'] : $fallback?->gender,
+            'profile_photo_url' => array_key_exists('profile_photo_url', $validated)
+                ? $validated['profile_photo_url']
+                : $fallback?->profile_photo_url,
         ];
     }
 
@@ -800,9 +783,10 @@ class AdminController extends Controller
         $height = $validated['height'] ?? $fallback?->height;
         $weight = $validated['weight'] ?? $fallback?->weight;
         $age = $validated['age'] ?? $fallback?->age;
-        $level = $validated['training_level'] ?? $fallback?->training_level;
+        $gender = $validated['gender'] ?? $fallback?->gender;
+        $level = $fallback?->training_level ?: 'Beginner';
 
-        return filled($height) && filled($weight) && filled($age) && filled($level);
+        return filled($height) && filled($weight) && filled($age) && filled($gender) && filled($level);
     }
 
     private function userPayload(User $user): array
@@ -815,7 +799,11 @@ class AdminController extends Controller
             'height' => $user->height ? (float) $user->height : null,
             'weight' => $user->weight ? (float) $user->weight : null,
             'age' => $user->age ? (int) $user->age : null,
+            'gender' => $user->gender,
+            'profile_photo_url' => $user->profile_photo_url,
             'training_level' => $user->training_level,
+            'intermediate_access_approved' => strtolower((string) $user->training_level) === 'intermediate',
+            'intermediate_approved_at' => optional($user->intermediate_approved_at)->toISOString(),
             'personalization_completed' => (bool) $user->personalization_completed,
             'created_at' => optional($user->created_at)->toISOString(),
             'updated_at' => optional($user->updated_at)->toISOString(),

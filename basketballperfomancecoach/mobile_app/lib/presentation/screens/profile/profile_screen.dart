@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/progress_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/glass_panel.dart';
+import '../personalization/personalization_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,7 +38,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final progress = context.watch<ProgressProvider>().summary;
 
     return Scaffold(
-      appBar: const BpcTopBar(compact: true),
+      appBar: BpcTopBar(
+        compact: true,
+        trailing: IconButton(
+          tooltip: 'Edit Profile',
+          onPressed: user == null
+              ? null
+              : () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const PersonalizationScreen(isEditing: true),
+                    ),
+                  );
+                },
+          icon: const Icon(Icons.edit_rounded),
+        ),
+      ),
       body: EliteBackground(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -54,14 +71,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               GlassPanel(
                 child: Column(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 42,
                       backgroundColor: AppColors.panelSoft,
-                      child: Icon(
-                        Icons.person_rounded,
-                        size: 48,
-                        color: AppColors.orange,
-                      ),
+                      backgroundImage: user?.profilePhotoUrl?.isNotEmpty == true
+                          ? NetworkImage(user!.profilePhotoUrl!)
+                          : null,
+                      child: user?.profilePhotoUrl?.isNotEmpty == true
+                          ? null
+                          : const Icon(
+                              Icons.person_rounded,
+                              size: 48,
+                              color: AppColors.orange,
+                            ),
                     ),
                     const SizedBox(height: 14),
                     Text(
@@ -118,6 +140,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.trending_up_rounded,
                     color: AppColors.orange,
                   ),
+                  MetricTile(
+                    label: 'Gender',
+                    value: _genderLabel(user?.gender),
+                    icon: Icons.wc_rounded,
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
@@ -134,6 +161,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _InfoLine(
                       label: 'Athlete info',
                       value: user?.athleteInfo.bmiCategory ?? '-',
+                    ),
+                    _InfoLine(
+                      label: 'Intermediate access',
+                      value: user?.intermediateAccessApproved == true
+                          ? 'Approved'
+                          : 'Coach approval required',
                     ),
                     _InfoLine(
                       label: 'Completed workouts',
@@ -162,6 +195,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  String _genderLabel(String? value) {
+    return switch (value) {
+      'male' => 'Laki-laki',
+      'female' => 'Perempuan',
+      _ => '-',
+    };
   }
 }
 

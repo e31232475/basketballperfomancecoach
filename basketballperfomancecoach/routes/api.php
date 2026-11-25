@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->prefix('coach')->group(function () {
     Route::get('/dashboard', [CoachController::class, 'dashboard']);
     Route::get('/athletes', [CoachController::class, 'athletes']);
     Route::get('/athletes/{user_id}', [CoachController::class, 'athlete']);
+    Route::post('/athletes/{user_id}/approve-intermediate', [CoachController::class, 'approveIntermediate']);
     Route::get('/recordings', [CoachController::class, 'recordings']);
     Route::post('/recordings/{recording_id}/review', [CoachController::class, 'review']);
 });

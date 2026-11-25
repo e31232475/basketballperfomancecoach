@@ -13,6 +13,7 @@ class AuthProvider extends ChangeNotifier {
   bool isBootstrapping = true;
   bool isLoading = false;
   String? errorMessage;
+  bool _redirectToProgram = false;
 
   bool get isAuthenticated => user != null;
 
@@ -55,7 +56,10 @@ class AuthProvider extends ChangeNotifier {
     required double height,
     required double weight,
     required int age,
-    required String trainingLevel,
+    required String gender,
+    String? profilePhotoPath,
+    bool removeProfilePhoto = false,
+    bool redirectToProgram = false,
   }) async {
     final currentUser = user;
     if (currentUser == null) {
@@ -71,9 +75,18 @@ class AuthProvider extends ChangeNotifier {
         height: height,
         weight: weight,
         age: age,
-        trainingLevel: trainingLevel,
+        gender: gender,
+        profilePhotoPath: profilePhotoPath,
+        removeProfilePhoto: removeProfilePhoto,
       );
+      _redirectToProgram = redirectToProgram;
     });
+  }
+
+  bool consumeProgramRedirect() {
+    final shouldRedirect = _redirectToProgram;
+    _redirectToProgram = false;
+    return shouldRedirect;
   }
 
   Future<void> refreshProfile() async {
